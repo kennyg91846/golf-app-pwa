@@ -1,0 +1,2107 @@
+<!DOCTYPE html>
+<!--https://gemini.google.com/app/33d1dc55c61aefec?utm_source=ai.google&utm_medium=referral -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1f7a3a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <title>Offline Golf Scorer</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        /* Palette A - High contrast greens */
+                        'golf-green': '#1f7a3a',
+                        'golf-green-500': '#2f9f5a',
+                        'golf-green-300': '#9be7b6',
+                        'golf-dark': '#133227',
+                        'accent-gold': '#f6ad55',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            /* Palette A - High contrast greens (recommended) */
+            --golf-green: #1f7a3a; /* primary darker green */
+            --golf-green-500: #2f9f5a; /* hover/secondary */
+            --golf-green-300: #9be7b6; /* light accents */
+            --golf-dark: #133227; /* very dark green for text/anchors */
+            --accent-gold: #f6ad55;
+            --page-bg: #11773d; /* very subtle green tint */
+            --muted-bg: #e8fdf0; /* subtle green block backgrounds */
+            --muted-bg-2: #d6f7df; /* slightly stronger green tint for totals */
+            --card-bg: #ffffff;
+            /* Darker stroke for high-sunlight visibility */
+            --stroke-dark: #0b3f23; /* deep green/near-black for outlines */
+            --stroke-strong: rgba(11,63,35,0.95);
+            /* Player separator thicknesses (easy to tweak) */
+            --player-sep-top: 3px;
+            --player-sep-bottom: 4px;
+        }
+        /* Custom styles for better aesthetics */
+        body {
+            background-color: var(--page-bg);
+            color: var(--golf-dark);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+        }
+        .app-shell {
+            width: min(430px, calc(100vw - 1rem), calc((100svh - 1rem) * 9 / 19.5));
+            aspect-ratio: 9 / 19.5;
+            overflow-y: auto;
+            overflow-x: hidden;
+            margin: 0 auto;
+        }
+        @media (max-width: 768px) {
+            body {
+                display: block;
+            }
+            .app-shell {
+                width: 100%;
+                max-width: none;
+                aspect-ratio: auto;
+                min-height: 100svh;
+                overflow-y: visible;
+                overflow-x: visible;
+                margin: 0;
+            }
+        }
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            margin-bottom: 0.5rem;
+        }
+        .install-cta {
+            display: none;
+            align-items: center;
+            gap: 0.45rem;
+        }
+        .install-cta.visible {
+            display: inline-flex;
+        }
+        .setup-meta-input {
+            width: 100%;
+            min-width: 0;
+        }
+        .install-label {
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
+        }
+        .install-btn {
+            align-items: center;
+            justify-content: center;
+            width: 2.25rem;
+            height: 2.25rem;
+            border-radius: 9999px;
+            border: 2px solid var(--stroke-dark);
+            background: var(--card-bg);
+            color: var(--golf-dark);
+            font-size: 1.1rem;
+            line-height: 1;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.16);
+        }
+        .install-btn:hover {
+            background: var(--muted-bg);
+        }
+        .install-btn:focus {
+            outline: 3px solid rgba(11,63,35,0.2);
+            outline-offset: 2px;
+        }
+        .score-card-input {
+            width: 2.5rem; /* Match putts (!w-10) width for uniformity */
+            text-align: center;
+            border-radius: 0.375rem;
+            border: 2px solid var(--stroke-dark);
+            padding: 0.25rem 0;
+            background-color: #ffffff;
+            color: var(--golf-dark);
+            font-weight: 700;
+            font-size: 0.95rem;
+            transition: all 0.12s;
+        }
+        .score-card-input:focus {
+            border-color: var(--stroke-strong);
+            box-shadow: 0 0 0 5px rgba(11,63,35,0.12);
+            outline: 3px solid rgba(11,63,35,0.12);
+        }
+        .score-card-input:disabled {
+            background-color: #f1f5f9; /* lighter gray when disabled */
+            cursor: not-allowed;
+        }
+        .header-row th {
+            padding: 0.75rem 0.5rem;
+            font-weight: 600;
+            border-bottom: 2px solid var(--stroke-dark);
+        }
+        .player-row td {
+            padding: 0.5rem 0.5rem;
+            vertical-align: middle;
+            border-bottom: 1px solid var(--stroke-dark);
+            color: var(--golf-dark);
+        }
+
+        /* Helper class for JS to apply darker text where strings are injected */
+        .text-golf-dark {
+            color: var(--golf-dark) !important;
+            font-weight: 700;
+        }
+        .sticky-col {
+            position: sticky;
+            left: 0;
+            background-color: var(--card-bg);
+            z-index: 10;
+            border-right: 2px solid var(--stroke-dark);
+        }
+        .sticky-col-header {
+            position: sticky;
+            left: 0;
+            z-index: 20;
+            min-width: 8rem;
+            background-color: var(--muted-bg);
+            border-right: 2px solid var(--stroke-dark);
+        }
+
+        /* Override a few commonly-used utility backgrounds so the page reads with the green theme
+           These use !important so they take precedence over Tailwind utility classes in some cases. */
+        .bg-gray-100, thead.bg-gray-100, .header-row.bg-gray-100 {
+            background-color: var(--muted-bg) !important;
+        }
+
+        .bg-gray-50 {
+            background-color: var(--muted-bg) !important;
+        }
+
+        .bg-gray-200 {
+            background-color: var(--muted-bg-2) !important;
+        }
+
+        /* Styles for the new toggle switch (made slightly larger for better touch target) */
+        .toggle-switch {
+            width: 4rem; /* 64px */
+            height: 2.25rem; /* 36px */
+            background-color: #cbd5e0;
+            border: 2px solid var(--stroke-dark);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.12);
+        }
+        .toggle-circle {
+            top: 2px;
+            left: 2px;
+            width: 32px;
+            height: 32px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.35);
+        }
+        #lock-toggle:checked + .toggle-switch {
+            background-color: var(--golf-green);
+            border-color: var(--golf-green-500);
+        }
+        #lock-toggle:checked + .toggle-switch .toggle-circle {
+            transform: translateX(28px); 
+        }
+
+        /* Primary button (save) using Palette A */
+        .btn-primary {
+            background: var(--golf-green);
+            color: #fff;
+            box-shadow: 0 8px 24px rgba(31,122,58,0.12);
+            border: 2px solid var(--stroke-dark);
+        }
+        .btn-primary:hover { background: var(--golf-green-500); }
+        .btn-primary:focus { outline: 3px solid rgba(11,63,35,0.18); }
+
+        /* Totals styling for better contrast */
+        .total-cell {
+            background: var(--muted-bg-2) !important;
+            color: var(--golf-dark) !important;
+            font-weight: 800;
+        }
+
+        /* Stronger borders for general form inputs and controls */
+        input[type="text"], input[type="date"], input[type="number"], select, textarea {
+            border: 2px solid var(--stroke-dark);
+            box-shadow: none;
+        }
+
+        /* Table outer border - use collapsed borders so separator lines are continuous */
+        #scorecard-table {
+            border-collapse: collapse;
+            border-spacing: 0;
+            border: 2px solid var(--stroke-dark);
+            width: 100%;
+        }
+
+        /* Message box stronger outline */
+        #message-box {
+            border: 2px solid var(--stroke-dark);
+        }
+
+        /* Strong player separators: apply thick, high-contrast lines across all cells in the player block */
+        .player-start td {
+            border-top: var(--player-sep-top) solid #000 !important; /* stronger black top line to start a player block */
+        }
+
+        .player-end td {
+            border-bottom: var(--player-sep-bottom) solid #000 !important; /* very strong black bottom line to end a player block */
+        }
+
+        .help-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.25rem;
+            height: 1.25rem;
+            margin-left: 0.35rem;
+            border-radius: 9999px;
+            border: 2px solid var(--stroke-dark);
+            background: #ffffff;
+            color: var(--golf-dark);
+            font-size: 0.75rem;
+            font-weight: 800;
+            line-height: 1;
+            text-decoration: none;
+        }
+
+        .help-link:hover {
+            background: var(--muted-bg);
+        }
+
+        .help-link:focus {
+            outline: 3px solid rgba(11,63,35,0.2);
+            outline-offset: 2px;
+        }
+
+        .help-card {
+            border: 2px solid var(--stroke-dark);
+            border-radius: 0.75rem;
+            background: #ffffff;
+            padding: 0.9rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .help-card h3 {
+            font-size: 1rem;
+            font-weight: 800;
+            margin-bottom: 0.25rem;
+        }
+
+        .help-card p {
+            font-size: 0.9rem;
+            color: #1f2937;
+        }
+
+        .help-return-wrap {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 0.75rem;
+        }
+
+        .help-return-btn {
+            border: 2px solid var(--stroke-dark);
+            border-radius: 9999px;
+            background: #ffffff;
+            color: var(--golf-dark);
+            font-weight: 700;
+            font-size: 0.85rem;
+            padding: 0.35rem 0.8rem;
+        }
+
+        .help-return-btn:hover {
+            background: var(--muted-bg);
+        }
+    </style>
+</head>
+<body class="font-sans text-golf-dark p-4 lg:p-8">
+
+    <div class="app-shell">
+        <div class="top-bar">
+            <div id="install-app-cta" class="install-cta" aria-hidden="true">
+                <span class="install-label">Install</span>
+                <button id="install-app-btn" class="install-btn" type="button" title="Install app" aria-label="Install app to home screen">⤓</button>
+            </div>
+        </div>
+        <h1 class="text-4xl font-extrabold text-golf-dark mb-6 text-center">
+            🏌️ Offline Golf Scorer
+        </h1>
+
+        <!-- Navigation Tabs -->
+        <div class="flex flex-col mb-6 gap-2">
+            <div class="flex w-full gap-2">
+                <button id="tab-current-round" class="flex-1 px-4 py-3 text-base font-semibold rounded-lg transition duration-150 ease-in-out bg-golf-green text-white shadow-lg border-2 border-white">
+                    Current Round
+                </button>
+                <button id="tab-saved-rounds" class="flex-1 px-4 py-3 text-base font-semibold transition duration-150 ease-in-out bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-lg border-2 border-black">
+                    Saved Rounds
+                </button>
+            </div>
+            <div class="flex">
+                <button id="export-rounds" class="px-4 py-2 text-sm font-medium rounded-md bg-white border-2 border-black shadow-sm hover:bg-gray-50">
+                    Export JSON
+                </button>
+                <button id="export-rounds-csv" class="ml-2 px-4 py-2 text-sm font-medium rounded-md bg-white border-2 border-black shadow-sm hover:bg-gray-50">
+                    Export CSV
+                </button>
+                <button id="import-rounds" class="ml-2 px-4 py-2 text-sm font-medium rounded-md bg-white border-2 border-black shadow-sm hover:bg-gray-50">
+                    Import
+                </button>
+                <input id="import-rounds-input" type="file" accept="application/json,.json" class="hidden">
+            </div>
+        </div>
+
+        <!-- Current Round View -->
+        <div id="current-round-view" class="p-6 lg:p-8 rounded-xl shadow-2xl transition-opacity duration-300" style="background-color:#b3e0b3">
+            <h2 class="text-2xl font-bold mb-4 text-golf-dark">Round Setup <a class="help-link" href="#help-round-setup" aria-label="Help: Round Setup" title="Help: Round Setup">?</a></h2>
+            <div id="message-box" class="hidden p-3 mb-4 rounded-lg text-sm" role="alert"></div>
+
+            <!-- Course and Player Setup (Lock toggle removed from here) -->
+            <div class="flex flex-col gap-4 mb-6">
+                <div>
+                    <label for="course-name" class="block text-sm font-medium text-gray-700">Course Name <a class="help-link" href="#help-course-name" aria-label="Help: Course Name" title="Help: Course Name">?</a></label>
+                    <input type="text" id="course-name" placeholder="Enter Course Name" class="setup-meta-input mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-golf-green focus:ring focus:ring-golf-green focus:ring-opacity-50 p-2 border">
+                </div>
+                <div>
+                    <label for="round-date" class="block text-sm font-medium text-gray-700">Date <a class="help-link" href="#help-date" aria-label="Help: Date" title="Help: Date">?</a></label>
+                    <input type="date" id="round-date" class="setup-meta-input mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-golf-green focus:ring focus:ring-golf-green focus:ring-opacity-50 p-2 border">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Holes to Play <a class="help-link" href="#help-holes" aria-label="Help: Holes to Play" title="Help: Holes to Play">?</a></label>
+                    <div class="flex gap-6">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" id="holes-9" name="holes-to-play" value="9" class="w-4 h-4">
+                            <span class="text-sm">9 holes</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" id="holes-18" name="holes-to-play" value="18" class="w-4 h-4" checked>
+                            <span class="text-sm">18 holes</span>
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Starting Hole <a class="help-link" href="#help-starting-hole" aria-label="Help: Starting Hole" title="Help: Starting Hole">?</a></label>
+                    <div class="flex gap-6">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" id="start-front" name="starting-hole" value="1" class="w-4 h-4" checked>
+                            <span class="text-sm">Front 9 (Hole 1)</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" id="start-back" name="starting-hole" value="10" class="w-4 h-4">
+                            <span class="text-sm">Back 9 (Hole 10)</span>
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Number of Players <a class="help-link" href="#help-player-count" aria-label="Help: Number of Players" title="Help: Number of Players">?</a></label>
+                    <div class="flex gap-3">
+                        <label class="flex items-center gap-1 cursor-pointer px-3 py-1 rounded-md border border-gray-300 bg-white">
+                            <input type="radio" id="players-1" name="player-count" value="1" class="w-4 h-4" checked>
+                            <span class="text-sm font-semibold">1</span>
+                        </label>
+                        <label class="flex items-center gap-1 cursor-pointer px-3 py-1 rounded-md border border-gray-300 bg-white">
+                            <input type="radio" id="players-2" name="player-count" value="2" class="w-4 h-4">
+                            <span class="text-sm font-semibold">2</span>
+                        </label>
+                        <label class="flex items-center gap-1 cursor-pointer px-3 py-1 rounded-md border border-gray-300 bg-white">
+                            <input type="radio" id="players-3" name="player-count" value="3" class="w-4 h-4">
+                            <span class="text-sm font-semibold">3</span>
+                        </label>
+                        <label class="flex items-center gap-1 cursor-pointer px-3 py-1 rounded-md border border-gray-300 bg-white">
+                            <input type="radio" id="players-4" name="player-count" value="4" class="w-4 h-4">
+                            <span class="text-sm font-semibold">4</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Player Name Inputs -->
+            <div class="flex flex-col gap-4 mb-8">
+                <div data-player-index="0">
+                    <label for="player-0-name" class="block text-sm font-medium text-gray-700">Player 1 Name <a class="help-link" href="#help-player-names" aria-label="Help: Player Names" title="Help: Player Names">?</a></label>
+                    <input type="text" id="player-0-name" value="Enter Player Name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="app.updatePlayerName(0, this.value)">
+                </div>
+                <div data-player-index="1">
+                    <label for="player-1-name" class="block text-sm font-medium text-gray-700">Player 2 Name</label>
+                    <input type="text" id="player-1-name" value="Enter Player Name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="app.updatePlayerName(1, this.value)">
+                </div>
+                <div data-player-index="2">
+                    <label for="player-2-name" class="block text-sm font-medium text-gray-700">Player 3 Name</label>
+                    <input type="text" id="player-2-name" value="Enter Player Name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="app.updatePlayerName(2, this.value)">
+                </div>
+                <div data-player-index="3">
+                    <label for="player-3-name" class="block text-sm font-medium text-gray-700">Player 4 Name</label>
+                    <input type="text" id="player-3-name" value="Enter Player Name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="app.updatePlayerName(3, this.value)">
+                </div>
+            </div>
+            
+            <!-- NEW: Lock Scoring Control Bar - Located just before the scorecard table -->
+            <div class="flex justify-between items-start mb-4 p-4 bg-gray-50 border border-gray-200 rounded-xl shadow-lg">
+                <div class="flex flex-col items-start space-y-2">
+                    <!-- Par button stacked above the status and slider -->
+                    <button id="par-toggle" class="bg-accent-gold text-white font-bold py-2 px-4 rounded-md shadow-md hover:bg-amber-600 transition">
+                        Edit Hole Pars
+                    </button>
+                    <a class="help-link" href="#help-lock-and-par" aria-label="Help: Lock and Par" title="Help: Lock and Par">?</a>
+
+                    <div class="flex items-center space-x-3">
+                        <label class="text-base font-bold text-golf-dark flex items-center">
+                            <span class="mr-3">🔒 Scoring Status:</span>
+                            <span id="lock-status" class="text-red-600 transition-colors duration-200">UNLOCKED</span>
+                        </label>
+
+                        <!-- Lock toggle immediately after the label (left side) -->
+                        <input type="checkbox" id="lock-toggle" class="hidden">
+                        <label for="lock-toggle" id="lock-toggle-label" class="toggle-switch cursor-pointer relative inline-block rounded-full transition-colors duration-200 shadow-lg">
+                            <span class="toggle-circle absolute bg-white rounded-full transition-transform duration-200 shadow-md"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- right side intentionally left empty for possible future controls -->
+                <div></div>
+            </div>
+
+            <!-- Par Editor Modal -->
+            <div id="par-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
+                <div class="p-6 rounded-xl shadow-2xl w-full max-w-lg" style="background-color:#b3e0b3">
+                    <h3 class="text-xl font-bold mb-4">Set Hole Pars (18 Holes)</h3>
+                    <div id="par-inputs" class="grid grid-cols-6 gap-2 max-h-80 overflow-y-auto pb-4">
+                        <!-- Pars will be generated here -->
+                    </div>
+                    <button id="save-par" class="w-full mt-4 bg-golf-green text-white font-bold py-2 rounded-md hover:bg-green-700 transition">
+                        Done
+                    </button>
+                </div>
+            </div>
+
+            <!-- Scorecard Table -->
+            <div class="overflow-x-auto shadow-inner rounded-lg">
+                <table id="scorecard-table" class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-100">
+                        <!-- Table header will be generated here -->
+                    </thead>
+                    <tbody>
+                        <!-- Table body will be generated here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Control Buttons -->
+            <div class="flex justify-center mt-6 space-x-4">
+                <button id="save-round" class="btn-primary bg-golf-green text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-green-700 transition transform hover:scale-105">
+                    💾 Save Round Offline
+                </button>
+                <button id="reset-round" class="bg-red-600 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-red-700 transition transform hover:scale-105">
+                    🔄 Reset Current Round
+                </button>
+                <a class="help-link" href="#help-save-reset" aria-label="Help: Save and Reset" title="Help: Save and Reset">?</a>
+            </div>
+        </div>
+
+        <!-- Saved Rounds View -->
+        <div id="saved-rounds-view" class="p-6 lg:p-8 rounded-xl shadow-2xl hidden" style="background-color:#b3e0b3">
+            <h2 class="text-2xl font-bold mb-4 text-golf-dark">Saved Rounds <a class="help-link" href="#help-saved-rounds" aria-label="Help: Saved Rounds" title="Help: Saved Rounds">?</a></h2>
+            <div class="mb-4 p-3 rounded-lg border-2 border-black" style="background-color:#fff4d6;">
+                <p class="text-sm font-semibold text-golf-dark">Important: Saved rounds are stored locally in this browser.</p>
+                <p class="text-sm text-golf-dark">If you do not export a backup, rounds can be lost after browser updates, browser data clearing, reinstall, device changes, or other storage deletion events.</p>
+            </div>
+            <div id="saved-rounds-list" class="space-y-4">
+                <p class="text-gray-500">Loading saved rounds...</p>
+            </div>
+        </div>
+
+        <!-- In-page Help Guide -->
+        <div id="help-guide" class="mt-6 p-6 lg:p-8 rounded-xl shadow-2xl" style="background-color:#b3e0b3">
+            <h2 class="text-2xl font-bold mb-4 text-golf-dark">Help & Guide</h2>
+            <div class="help-return-wrap">
+                <button class="help-return-btn hidden" type="button">Back to where I was</button>
+            </div>
+
+            <div id="help-round-setup" class="help-card">
+                <h3>Round Setup</h3>
+                <p>Use this area to define your round before scoring. Set course details, round options, and player names. The scorecard updates instantly based on these settings.</p>
+            </div>
+
+            <div id="help-course-name" class="help-card">
+                <h3>Course Name</h3>
+                <p>Enter the course name. It is used when saving rounds so they are easy to find later in Saved Rounds.</p>
+            </div>
+
+            <div id="help-date" class="help-card">
+                <h3>Date</h3>
+                <p>Choose the round date. This date is stored with each saved round and shown in the Saved Rounds list.</p>
+            </div>
+
+            <div class="help-return-wrap">
+                <button class="help-return-btn hidden" type="button">Back to where I was</button>
+            </div>
+
+            <div id="help-holes" class="help-card">
+                <h3>Holes to Play</h3>
+                <p>Select 9 or 18 holes. For 9-hole rounds, only the selected nine is active for scoring and totals.</p>
+            </div>
+
+            <div id="help-starting-hole" class="help-card">
+                <h3>Starting Hole</h3>
+                <p>Pick Front 9 (Hole 1) or Back 9 (Hole 10). The scorecard order and tab flow follow this selection.</p>
+            </div>
+
+            <div id="help-player-count" class="help-card">
+                <h3>Number of Players</h3>
+                <p>Choose how many players are in the round. Only that number of player name fields will be shown.</p>
+            </div>
+
+            <div class="help-return-wrap">
+                <button class="help-return-btn hidden" type="button">Back to where I was</button>
+            </div>
+
+            <div id="help-player-names" class="help-card">
+                <h3>Player Names</h3>
+                <p>Type each player name. A player appears on the scorecard once a real name is entered.</p>
+            </div>
+
+            <div id="help-lock-and-par" class="help-card">
+                <h3>Edit Hole Pars and Lock Scoring</h3>
+                <p>Use Edit Hole Pars to customize par values. Use the lock toggle to prevent accidental score edits after entry.</p>
+            </div>
+
+            <div id="help-save-reset" class="help-card">
+                <h3>Save and Reset</h3>
+                <p>Save Round Offline stores the round in your browser storage (IndexedDB). Reset Current Round clears setup and scores to start a fresh round.</p>
+            </div>
+
+            <div class="help-return-wrap">
+                <button class="help-return-btn hidden" type="button">Back to where I was</button>
+            </div>
+
+            <div id="help-saved-rounds" class="help-card">
+                <h3>Saved Rounds, Export, and Import</h3>
+                <p>Saved Rounds lets you review previously saved rounds. Export downloads a JSON backup file. Import restores rounds from a previously exported JSON file. If rounds are not exported, they may be lost if browser storage is cleared, browser/app data is reset, or local data is removed during updates or device changes.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- IndexedDB Configuration and Helper Functions ---
+        const DB_NAME = 'GolfScorerDB';
+        const STORE_NAME = 'rounds';
+        const DB_VERSION = 1;
+        const DRAFT_STORAGE_KEY = 'offlineGolfScorer.currentRound.v1';
+
+        /**
+         * Opens the IndexedDB connection and returns the DB object.
+         * @returns {Promise<IDBDatabase>}
+         */
+        const openDB = () => new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+            request.onerror = (event) => {
+                console.error("IndexedDB error:", event.target.error);
+                reject(event.target.error);
+            };
+
+            request.onsuccess = (event) => {
+                resolve(event.target.result);
+            };
+
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                // Create the object store if it doesn't exist
+                if (!db.objectStoreNames.contains(STORE_NAME)) {
+                    db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                }
+            };
+        });
+
+        /**
+         * Loads all saved rounds from IndexedDB.
+         * @returns {Promise<Array<object>>}
+         */
+        const loadAllRounds = async () => {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(STORE_NAME, 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.getAll();
+
+                request.onsuccess = (event) => resolve(event.target.result);
+                request.onerror = (event) => reject(event.target.error);
+            });
+        };
+
+        /**
+         * Saves a round object to IndexedDB.
+         * @param {object} roundData
+         * @returns {Promise<void>}
+         */
+        const saveRound = async (roundData) => {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(STORE_NAME, 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.add(roundData);
+
+                request.onsuccess = () => resolve();
+                request.onerror = (event) => reject(event.target.error);
+            });
+        };
+
+        /**
+         * Saves multiple rounds into IndexedDB.
+         * Any existing id field is removed so IndexedDB can assign a new key.
+         * @param {Array<object>} rounds
+         * @returns {Promise<number>} Number of rounds imported
+         */
+        const importRoundsToDB = async (rounds) => {
+            if (!Array.isArray(rounds) || rounds.length === 0) return 0;
+
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(STORE_NAME, 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                let importedCount = 0;
+
+                rounds.forEach((round) => {
+                    const { id, ...safeRound } = round || {};
+                    void id;
+                    store.add(safeRound);
+                    importedCount += 1;
+                });
+
+                transaction.oncomplete = () => resolve(importedCount);
+                transaction.onerror = () => reject(transaction.error || new Error('Import transaction failed.'));
+                transaction.onabort = () => reject(transaction.error || new Error('Import transaction aborted.'));
+            });
+        };
+
+
+        // --- Application State and Logic ---
+        const NUM_HOLES = 18;
+        const NUM_PLAYERS = 4;
+
+        class GolfScorerApp {
+            constructor() {
+                // Prompt string used for empty player inputs
+                this.playerNamePrompt = 'Enter Player Name';
+                this.defaultPar = [3, 3, 4, 4, 3, 4, 4, 3, 3, 4, 4, 3, 3, 3, 3, 3, 4, 4]; // Standard 18-hole par 72
+
+                this.state = {
+                    courseName: document.getElementById('course-name')?.value || '',
+                    roundDate: this.getCurrentDateString(),
+                    holePars: [...this.defaultPar],
+                    holesPlaying: 18, // 9 or 18
+                    startingHole: 1, // 1 (front 9) or 10 (back 9)
+                    playerCount: 1,
+                    players: Array.from({ length: NUM_PLAYERS }, (_, i) => ({
+                        name: document.getElementById(`player-${i}-name`)?.value || `Player ${i + 1}`,
+                        strokes: Array(NUM_HOLES).fill(0),
+                        putts: Array(NUM_HOLES).fill(0),
+                    })),
+                    isLocked: false, // Score lock state
+                };
+
+                this.courseNameCleared = false; // track if we've cleared the course name once
+                this.autoAdvanceTimer = null;
+                this.initDOM();
+                this.initEventHandlers();
+                this.loadDraftFromStorage();
+                this.renderScorecard();
+                this.loadSavedRoundsView();
+            }
+
+            // Returns true when a player should be shown on the scorecard
+            isPlayerActive(player) {
+                if (!player) return false;
+                const name = (player.name || '').trim();
+                return name.length > 0 && name !== this.playerNamePrompt;
+            }
+
+            // Normalize a name to Title Case (capitalize first letter of each word)
+            toTitleCase(name) {
+                if (!name) return '';
+                return name.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+            }
+
+            getCurrentDateString() {
+                return new Date().toISOString().split('T')[0];
+            }
+
+            // Get the hole sequence based on holesPlaying and startingHole
+            // Returns array of hole indices in the order to be played
+            getHoleSequence() {
+                const { holesPlaying, startingHole } = this.state;
+                const sequence = [];
+
+                if (holesPlaying === 9) {
+                    // Playing 9 holes
+                    if (startingHole === 1) {
+                        // Front 9: holes 0-8
+                        for (let i = 0; i < 9; i++) sequence.push(i);
+                    } else {
+                        // Back 9: holes 9-17
+                        for (let i = 9; i < 18; i++) sequence.push(i);
+                    }
+                } else {
+                    // Playing 18 holes
+                    if (startingHole === 1) {
+                        // Front 9 then Back 9: holes 0-8, then 9-17
+                        for (let i = 0; i < 18; i++) sequence.push(i);
+                    } else {
+                        // Back 9 then Front 9: holes 9-17, then 0-8
+                        for (let i = 9; i < 18; i++) sequence.push(i);
+                        for (let i = 0; i < 9; i++) sequence.push(i);
+                    }
+                }
+
+                return sequence;
+            }
+
+            initDOM() {
+                this.courseNameInput = document.getElementById('course-name');
+                this.roundDateInput = document.getElementById('round-date');
+                this.parToggleBtn = document.getElementById('par-toggle');
+                this.parModal = document.getElementById('par-modal');
+                this.parInputsContainer = document.getElementById('par-inputs');
+                this.saveParBtn = document.getElementById('save-par');
+                this.scorecardTable = document.getElementById('scorecard-table');
+                this.saveRoundBtn = document.getElementById('save-round');
+                this.resetRoundBtn = document.getElementById('reset-round');
+                this.exportRoundsBtn = document.getElementById('export-rounds');
+                this.exportRoundsCsvBtn = document.getElementById('export-rounds-csv');
+                this.importRoundsBtn = document.getElementById('import-rounds');
+                this.importRoundsInput = document.getElementById('import-rounds-input');
+                this.helpReturnBtns = Array.from(document.querySelectorAll('.help-return-btn'));
+                this.messageBox = document.getElementById('message-box');
+
+                this.currentRoundView = document.getElementById('current-round-view');
+                this.savedRoundsView = document.getElementById('saved-rounds-view');
+                this.tabCurrentRound = document.getElementById('tab-current-round');
+                this.tabSavedRounds = document.getElementById('tab-saved-rounds');
+                
+                // Lock UI elements
+                this.lockToggle = document.getElementById('lock-toggle');
+                this.lockStatusSpan = document.getElementById('lock-status');
+                
+                // Holes to play and starting hole radio buttons
+                this.holes9Radio = document.getElementById('holes-9');
+                this.holes18Radio = document.getElementById('holes-18');
+                this.startFrontRadio = document.getElementById('start-front');
+                this.startBackRadio = document.getElementById('start-back');
+                this.playerCountRadios = Array.from(document.querySelectorAll('input[name="player-count"]'));
+                
+                // Set initial values
+                this.courseNameInput.value = this.state.courseName;
+                this.roundDateInput.value = this.state.roundDate;
+                if (this.state.holesPlaying === 9) {
+                    this.holes9Radio.checked = true;
+                } else {
+                    this.holes18Radio.checked = true;
+                }
+                if (this.state.startingHole === 10) {
+                    this.startBackRadio.checked = true;
+                } else {
+                    this.startFrontRadio.checked = true;
+                }
+                this.playerCountRadios.forEach((radio) => {
+                    radio.checked = parseInt(radio.value, 10) === this.state.playerCount;
+                });
+                this.state.players.forEach((player, i) => {
+                    const input = document.getElementById(`player-${i}-name`);
+                    if (input) input.value = player.name;
+                });
+                // Track whether each player name prompt has been cleared (so we only clear once)
+                this.playerNameCleared = Array.from({ length: NUM_PLAYERS }, () => false);
+                this.updatePlayerInputVisibility();
+
+                // Add one-time focus handlers to clear the default prompt text for player name inputs
+                this.state.players.forEach((player, i) => {
+                    const input = document.getElementById(`player-${i}-name`);
+                    if (!input) return;
+                    const initial = input.value || '';
+                    input.addEventListener('focus', (e) => {
+                        if (this.playerNameCleared[i]) return;
+                        const current = e.target.value || '';
+                        if (current && current === initial) {
+                            e.target.value = '';
+                            // Place caret at start and select field so typing is ready
+                            setTimeout(() => e.target.select(), 0);
+                        }
+                        this.playerNameCleared[i] = true;
+                    });
+                });
+                // Set initial lock state UI
+                this.lockToggle.checked = this.state.isLocked;
+                this.updateLockStatusUI(this.state.isLocked);
+            }
+
+            // Show exactly the selected number of player name inputs.
+            updatePlayerInputVisibility() {
+                if (!this.playerNameCleared) {
+                    this.playerNameCleared = Array.from({ length: NUM_PLAYERS }, () => false);
+                }
+
+                const visibleCount = Math.min(NUM_PLAYERS, Math.max(1, parseInt(this.state.playerCount, 10) || 1));
+
+                for (let i = 0; i < NUM_PLAYERS; i++) {
+                    const row = document.querySelector(`[data-player-index="${i}"]`);
+                    if (!row) continue;
+
+                    if (i < visibleCount) {
+                        row.classList.remove('hidden');
+                    } else {
+                        // Hide and clear players beyond selected player count.
+                        row.classList.add('hidden');
+                        this.state.players[i].name = this.playerNamePrompt;
+                        const input = document.getElementById(`player-${i}-name`);
+                        if (input) {
+                            input.value = this.playerNamePrompt;
+                        }
+                        this.playerNameCleared[i] = false;
+                    }
+                }
+            }
+
+            initEventHandlers() {
+                // Ensure course name is always stored/displayed in uppercase as user types
+                this.courseNameInput.addEventListener('input', (e) => {
+                    const upper = (e.target.value || '').toUpperCase();
+                    // update the visible value (keeps caret position reasonably)
+                    e.target.value = upper;
+                    this.state.courseName = upper;
+                    this.scheduleDraftSave();
+                });
+                this.roundDateInput.addEventListener('input', (e) => {
+                    this.state.roundDate = e.target.value;
+                    this.scheduleDraftSave();
+                });
+
+                this.parToggleBtn.addEventListener('click', () => this.showParModal());
+                this.saveParBtn.addEventListener('click', () => this.saveParModal());
+
+                this.parModal.addEventListener('click', (e) => {
+                    if (e.target === this.parModal) {
+                        this.hideParModal();
+                    }
+                });
+
+                this.saveRoundBtn.addEventListener('click', () => this.handleSaveRound());
+                this.resetRoundBtn.addEventListener('click', () => this.handleResetRound());
+
+                // Export rounds button
+                if (this.exportRoundsBtn) this.exportRoundsBtn.addEventListener('click', () => this.exportRounds());
+                if (this.exportRoundsCsvBtn) this.exportRoundsCsvBtn.addEventListener('click', () => this.exportRoundsCsv());
+                if (this.importRoundsBtn) this.importRoundsBtn.addEventListener('click', () => this.importRounds());
+                if (this.importRoundsInput) this.importRoundsInput.addEventListener('change', (e) => this.handleImportRoundsSelection(e));
+
+                this.helpLinkContext = null;
+                this.tempReturnFocusId = null;
+                const helpLinks = Array.from(document.querySelectorAll('.help-link[href^="#help-"]'));
+                helpLinks.forEach((link) => {
+                    link.addEventListener('click', () => {
+                        const active = document.activeElement;
+                        let activeId = active && active.id ? active.id : null;
+
+                        if (active && !activeId) {
+                            activeId = `help-return-focus-${Date.now()}`;
+                            active.id = activeId;
+                            this.tempReturnFocusId = activeId;
+                        }
+
+                        const canTrackSelection = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA');
+                        this.helpLinkContext = {
+                            scrollX: window.scrollX,
+                            scrollY: window.scrollY,
+                            activeId,
+                            selectionStart: canTrackSelection ? active.selectionStart : null,
+                            selectionEnd: canTrackSelection ? active.selectionEnd : null,
+                        };
+
+                        this.helpReturnBtns.forEach((btn) => btn.classList.remove('hidden'));
+                    });
+                });
+
+                this.helpReturnBtns.forEach((btn) => {
+                    btn.addEventListener('click', () => this.returnFromHelp());
+                });
+
+                this.tabCurrentRound.addEventListener('click', () => this.switchView('current'));
+                this.tabSavedRounds.addEventListener('click', () => this.switchView('saved'));
+                
+                // Holes to play and starting hole radio buttons
+                this.holes9Radio.addEventListener('change', () => {
+                    this.state.holesPlaying = 9;
+                    this.renderScorecard();
+                    this.focusFirstPlayableHoleInput();
+                    this.scheduleDraftSave();
+                });
+                this.holes18Radio.addEventListener('change', () => {
+                    this.state.holesPlaying = 18;
+                    this.renderScorecard();
+                    this.focusFirstPlayableHoleInput();
+                    this.scheduleDraftSave();
+                });
+                this.startFrontRadio.addEventListener('change', () => {
+                    this.state.startingHole = 1;
+                    this.renderScorecard();
+                    this.focusFirstPlayableHoleInput();
+                    this.scheduleDraftSave();
+                });
+                this.startBackRadio.addEventListener('change', () => {
+                    this.state.startingHole = 10;
+                    this.renderScorecard();
+                    this.focusFirstPlayableHoleInput();
+                    this.scheduleDraftSave();
+                });
+
+                this.playerCountRadios.forEach((radio) => {
+                    radio.addEventListener('change', (e) => {
+                        if (!e.target.checked) return;
+                        this.state.playerCount = parseInt(e.target.value, 10) || 1;
+                        this.updatePlayerInputVisibility();
+                        this.renderScorecard();
+                        this.focusFirstPlayableHoleInput();
+                        this.scheduleDraftSave();
+                    });
+                });
+                
+                // Lock toggle listener
+                this.lockToggle.addEventListener('change', (e) => this.handleLockToggle(e.target.checked));
+            }
+            
+            // Handle Lock Toggle
+            handleLockToggle(isLocked) {
+                this.state.isLocked = isLocked;
+                this.updateLockStatusUI(isLocked);
+                this.scheduleDraftSave();
+                this.renderScorecard(); // Re-render to apply 'disabled' to inputs
+                this.showMessage(`Scorecard inputs are now ${isLocked ? 'LOCKED' : 'UNLOCKED'}.`, isLocked ? 'success' : 'info');
+            }
+            
+            // Update Lock Status UI
+            updateLockStatusUI(isLocked) {
+                this.lockStatusSpan.textContent = isLocked ? 'LOCKED' : 'UNLOCKED';
+                this.lockStatusSpan.classList.toggle('text-red-600', !isLocked);
+                this.lockStatusSpan.classList.toggle('text-golf-green', isLocked);
+            }
+
+            switchView(view) {
+                if (view === 'current') {
+                    this.currentRoundView.classList.remove('hidden');
+                    this.savedRoundsView.classList.add('hidden');
+                    this.tabCurrentRound.classList.replace('bg-gray-200', 'bg-golf-green');
+                    this.tabCurrentRound.classList.replace('text-gray-700', 'text-white');
+                    this.tabSavedRounds.classList.replace('bg-golf-green', 'bg-gray-200');
+                    this.tabSavedRounds.classList.replace('text-white', 'text-gray-700');
+                    this.renderScorecard(); // Re-render in case par was changed
+                    this.focusFirstPlayableHoleInput();
+                } else if (view === 'saved') {
+                    this.currentRoundView.classList.add('hidden');
+                    this.savedRoundsView.classList.remove('hidden');
+                    this.tabCurrentRound.classList.replace('bg-golf-green', 'bg-gray-200');
+                    this.tabCurrentRound.classList.replace('text-white', 'text-gray-700');
+                    this.tabSavedRounds.classList.replace('bg-gray-200', 'bg-golf-green');
+                    this.tabSavedRounds.classList.replace('text-gray-700', 'text-white');
+                    this.loadSavedRoundsView();
+                }
+            }
+
+            // --- Player Name Update ---
+            updatePlayerName(playerIndex, name) {
+                // If the name is empty, keep the prompt as the stored value
+                const trimmed = (name || '').trim();
+                const normalized = trimmed.length > 0 ? this.toTitleCase(trimmed) : this.playerNamePrompt;
+                this.state.players[playerIndex].name = normalized;
+                // Update the input value (keeps prompt behavior consistent)
+                const input = document.getElementById(`player-${playerIndex}-name`);
+                if (input) input.value = this.state.players[playerIndex].name;
+                this.scheduleDraftSave();
+                this.renderScorecard();
+            }
+
+            getFirstActivePlayerIndex() {
+                for (let i = 0; i < this.state.players.length; i++) {
+                    if (this.isPlayerActive(this.state.players[i])) return i;
+                }
+                return -1;
+            }
+
+            getActivePlayerIndices() {
+                const indices = [];
+                for (let i = 0; i < this.state.players.length; i++) {
+                    if (this.isPlayerActive(this.state.players[i])) {
+                        indices.push(i);
+                    }
+                }
+                return indices;
+            }
+
+            getNextInputTarget(playerIndex, holeIndex, type) {
+                const activePlayers = this.getActivePlayerIndices();
+                if (activePlayers.length === 0) return null;
+
+                const playerPos = activePlayers.indexOf(playerIndex);
+                if (playerPos === -1) return null;
+
+                const holeSequence = this.getHoleSequence();
+                const holePos = holeSequence.indexOf(holeIndex);
+                if (holePos === -1) return null;
+
+                // Strokes always advance to putts for the same player/hole first.
+                if (type === 'strokes') {
+                    return { playerIndex, holeIndex, type: 'putts' };
+                }
+
+                // From putts: move to next active player's strokes on the same hole.
+                if (playerPos < activePlayers.length - 1) {
+                    return { playerIndex: activePlayers[playerPos + 1], holeIndex, type: 'strokes' };
+                }
+
+                // End of players for this hole: move to first active player on next hole.
+                if (holePos < holeSequence.length - 1) {
+                    return { playerIndex: activePlayers[0], holeIndex: holeSequence[holePos + 1], type: 'strokes' };
+                }
+
+                // End of round.
+                return null;
+            }
+
+            focusFirstPlayableHoleInput() {
+                if (!this.scorecardTable) return;
+                if (this.state.isLocked) return;
+
+                const firstPlayerIndex = this.getFirstActivePlayerIndex();
+                if (firstPlayerIndex < 0) return;
+
+                const holeSequence = this.getHoleSequence();
+                if (!holeSequence.length) return;
+
+                const firstHoleIndex = holeSequence[0];
+                const selector = `input[data-player="${firstPlayerIndex}"][data-hole="${firstHoleIndex}"][data-type="strokes"]`;
+                const input = this.scorecardTable.querySelector(selector);
+
+                if (input && !input.disabled) {
+                    input.focus();
+                    input.select();
+                }
+            }
+
+            // --- Scorecard Input Handling ---
+            updateScore(playerIndex, holeIndex, type, value) {
+                // Ignore update if locked
+                if (this.state.isLocked) return;
+
+                const val = parseInt(value) || 0;
+                let nextFocusTarget = { playerIndex, holeIndex, type };
+                if (type === 'strokes') {
+                    this.state.players[playerIndex].strokes[holeIndex] = val;
+
+                    // Delay auto-advance to putts so two-digit strokes can be entered naturally.
+                    clearTimeout(this.autoAdvanceTimer);
+                    const rawValue = (value || '').toString().trim();
+                    if (rawValue !== '' && val > 0) {
+                        const expectedValue = val;
+                        this.autoAdvanceTimer = setTimeout(() => {
+                            if (this.state.isLocked) return;
+
+                            const active = document.activeElement;
+                            const stillOnSameStrokesInput = active
+                                && active.matches('input[data-type="strokes"]')
+                                && parseInt(active.dataset.player, 10) === playerIndex
+                                && parseInt(active.dataset.hole, 10) === holeIndex;
+
+                            // Only move focus if user is still on this strokes cell and value hasn't changed.
+                            if (!stillOnSameStrokesInput) return;
+                            if (this.state.players[playerIndex].strokes[holeIndex] !== expectedValue) return;
+
+                            const target = this.getNextInputTarget(playerIndex, holeIndex, 'strokes');
+                            if (!target) return;
+                            const selector = `input[data-player="${target.playerIndex}"][data-hole="${target.holeIndex}"][data-type="${target.type}"]`;
+                            const puttsInput = this.scorecardTable.querySelector(selector);
+                            if (puttsInput && !puttsInput.disabled) {
+                                puttsInput.focus();
+                                puttsInput.select();
+                            }
+                        }, 300);
+                    }
+                } else if (type === 'putts') {
+                    this.state.players[playerIndex].putts[holeIndex] = val;
+
+                    const rawValue = (value || '').toString().trim();
+                    if (rawValue !== '' && val > 0) {
+                        nextFocusTarget = this.getNextInputTarget(playerIndex, holeIndex, 'putts');
+                    }
+                }
+                this.scheduleDraftSave();
+                this.renderScorecard();
+
+                if (nextFocusTarget) {
+                    const selector = `input[data-player="${nextFocusTarget.playerIndex}"][data-hole="${nextFocusTarget.holeIndex}"][data-type="${nextFocusTarget.type}"]`;
+                    const input = this.scorecardTable.querySelector(selector);
+                    if (input && !input.disabled) {
+                        input.focus();
+                        input.select();
+                    }
+                }
+            }
+
+            // --- Par Modal Logic ---
+            showParModal() {
+                this.parInputsContainer.innerHTML = '';
+                this.state.holePars.forEach((par, i) => {
+                    const label = document.createElement('label');
+                    label.className = 'flex flex-col items-center';
+                    label.innerHTML = `
+                        <span class="text-xs font-semibold mb-1">Hole ${i + 1}</span>
+                        <input type="number" value="${par}" min="1" max="7" data-hole-index="${i}" class="score-card-input !w-12">
+                    `;
+                    this.parInputsContainer.appendChild(label);
+                });
+                this.parModal.classList.remove('hidden');
+                this.parModal.classList.add('flex');
+            }
+
+            hideParModal() {
+                this.parModal.classList.add('hidden');
+                this.parModal.classList.remove('flex');
+            }
+
+            saveParModal() {
+                const inputs = this.parInputsContainer.querySelectorAll('input[type="number"]');
+                const newPars = Array.from(inputs).map(input => parseInt(input.value) || 0);
+
+                // Validation: Ensure 18 pars were set
+                if (newPars.length !== NUM_HOLES || newPars.some(p => p < 1 || p > 7)) {
+                    this.showMessage("Please set a valid par (1-7) for all 18 holes.", 'error');
+                    return;
+                }
+
+                this.state.holePars = newPars;
+                this.hideParModal();
+                this.scheduleDraftSave();
+                this.renderScorecard();
+                this.showMessage("Course par successfully updated!", 'success');
+            }
+
+            // --- Current Round Draft Persistence ---
+
+            scheduleDraftSave() {
+                clearTimeout(this.draftSaveTimer);
+                this.draftSaveTimer = setTimeout(() => this.saveDraftToStorage(), 150);
+            }
+
+            saveDraftToStorage() {
+                try {
+                    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(this.state));
+                } catch (error) {
+                    console.warn('Failed to save current round draft:', error);
+                }
+            }
+
+            loadDraftFromStorage() {
+                try {
+                    const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+                    if (!raw) return;
+
+                    const draft = JSON.parse(raw);
+                    if (!draft || typeof draft !== 'object') return;
+                    if (!Array.isArray(draft.holePars) || draft.holePars.length !== NUM_HOLES) return;
+                    if (!Array.isArray(draft.players)) return;
+
+                    const normalizedPlayers = Array.from({ length: NUM_PLAYERS }, (_, i) => {
+                        const player = draft.players[i] || {};
+                        const strokes = Array.isArray(player.strokes) && player.strokes.length === NUM_HOLES
+                            ? player.strokes.map((v) => parseInt(v) || 0)
+                            : Array(NUM_HOLES).fill(0);
+                        const putts = Array.isArray(player.putts) && player.putts.length === NUM_HOLES
+                            ? player.putts.map((v) => parseInt(v) || 0)
+                            : Array(NUM_HOLES).fill(0);
+                        const name = (player.name || '').trim();
+
+                        return {
+                            name: name.length > 0 ? this.toTitleCase(name) : this.playerNamePrompt,
+                            strokes,
+                            putts,
+                        };
+                    });
+
+                    const draftCourseName = (draft.courseName || this.state.courseName || '').toString().trim();
+                    const normalizedCourseName = /^course\s*name$/i.test(draftCourseName)
+                        ? ''
+                        : draftCourseName.toUpperCase();
+
+                    this.state = {
+                        courseName: normalizedCourseName,
+                        roundDate: draft.roundDate || this.state.roundDate,
+                        holePars: draft.holePars.map((v) => {
+                            const par = parseInt(v) || 0;
+                            return Math.min(7, Math.max(1, par));
+                        }),
+                        holesPlaying: draft.holesPlaying || 18,
+                        startingHole: draft.startingHole || 1,
+                        playerCount: Math.min(NUM_PLAYERS, Math.max(1, parseInt(draft.playerCount, 10) || 1)),
+                        players: normalizedPlayers,
+                        isLocked: Boolean(draft.isLocked),
+                    };
+
+                    this.courseNameInput.value = this.state.courseName;
+                    this.roundDateInput.value = this.state.roundDate;
+                    if (this.state.holesPlaying === 9) {
+                        this.holes9Radio.checked = true;
+                    } else {
+                        this.holes18Radio.checked = true;
+                    }
+                    if (this.state.startingHole === 10) {
+                        this.startBackRadio.checked = true;
+                    } else {
+                        this.startFrontRadio.checked = true;
+                    }
+                    this.playerCountRadios.forEach((radio) => {
+                        radio.checked = parseInt(radio.value, 10) === this.state.playerCount;
+                    });
+                    this.state.players.forEach((player, i) => {
+                        const input = document.getElementById(`player-${i}-name`);
+                        if (input) input.value = player.name;
+                    });
+                    this.updatePlayerInputVisibility();
+                    this.lockToggle.checked = this.state.isLocked;
+                    this.updateLockStatusUI(this.state.isLocked);
+                } catch (error) {
+                    console.warn('Failed to load current round draft:', error);
+                }
+            }
+
+            clearDraftFromStorage() {
+                try {
+                    localStorage.removeItem(DRAFT_STORAGE_KEY);
+                } catch (error) {
+                    console.warn('Failed to clear current round draft:', error);
+                }
+            }
+
+            // --- Rendering Logic ---
+            
+            calculateTotal(scores) {
+                return scores.reduce((sum, score) => sum + score, 0);
+            }
+
+            renderHeader() {
+                const tableHead = this.scorecardTable.querySelector('thead');
+                const displayOrder = this.state.startingHole === 10
+                    ? Array.from({ length: 9 }, (_, i) => i + 9).concat(Array.from({ length: 9 }, (_, i) => i))
+                    : Array.from({ length: NUM_HOLES }, (_, i) => i);
+                const firstNineDisplay = displayOrder.slice(0, 9);
+                const secondNineDisplay = displayOrder.slice(9, 18);
+                const firstNinePars = firstNineDisplay.map((h) => this.state.holePars[h]);
+                const secondNinePars = secondNineDisplay.map((h) => this.state.holePars[h]);
+                const firstNinePar = this.calculateTotal(firstNinePars);
+                const secondNinePar = this.calculateTotal(secondNinePars);
+                const holeSequence = this.getHoleSequence();
+                const selectedParTotal = this.calculateTotal(holeSequence.map((h) => this.state.holePars[h] || 0));
+                const firstNineLabel = this.state.startingHole === 10 ? 'Back 9' : 'Front 9';
+                const secondNineLabel = this.state.startingHole === 10 ? 'Front 9' : 'Back 9';
+
+                // --- Hole Number Row ---
+                let front9Html = '';
+                for (const holeIndex of firstNineDisplay) {
+                    front9Html += `<th class="px-2 whitespace-nowrap text-sm font-bold bg-gray-100">${holeIndex + 1}</th>`;
+                }
+                let back9Html = '';
+                for (const holeIndex of secondNineDisplay) {
+                    back9Html += `<th class="px-2 whitespace-nowrap text-sm font-bold bg-gray-100">${holeIndex + 1}</th>`;
+                }
+
+                let headerHtml = `
+                    <tr class="header-row bg-gray-100">
+                        <th class="sticky-col-header text-left">Player/Metric</th>
+                        ${front9Html}
+                        <th class="px-4 text-center bg-accent-gold text-white">${firstNineLabel}</th>
+                        ${back9Html}
+                        <th class="px-4 text-center bg-accent-gold text-white">${secondNineLabel}</th>
+                        <th class="px-4 text-center bg-golf-green text-white">Grand Total</th>
+                        <th class="px-4 text-center bg-golf-green text-white">To Par (${selectedParTotal})</th>
+                    </tr>
+                `;
+
+                // --- Par Row ---
+                headerHtml += `
+                    <tr>
+                        <th class="sticky-col-header text-left bg-gray-200 font-normal py-1 text-sm">Par</th>
+                        ${firstNinePars.map(par => `<th class="px-2 py-1 text-sm bg-gray-200 font-normal">${par}</th>`).join('')}
+                        <th class="px-4 text-center bg-amber-200 font-bold py-1 text-sm">${firstNinePar}</th>
+                        ${secondNinePars.map(par => `<th class="px-2 py-1 text-sm bg-gray-200 font-normal">${par}</th>`).join('')}
+                        <th class="px-4 text-center bg-amber-200 font-bold py-1 text-sm">${secondNinePar}</th>
+                        <th class="px-4 text-center bg-green-200 font-bold py-1 text-sm">${selectedParTotal}</th>
+                        <th class="px-4 text-center bg-green-200 font-bold py-1 text-sm">-</th>
+                    </tr>
+                `;
+                
+                tableHead.innerHTML = headerHtml;
+            }
+
+            renderScorecard() {
+                this.renderHeader();
+                const tableBody = this.scorecardTable.querySelector('tbody');
+                tableBody.innerHTML = '';
+                
+                const displayOrder = this.state.startingHole === 10
+                    ? Array.from({ length: 9 }, (_, i) => i + 9).concat(Array.from({ length: 9 }, (_, i) => i))
+                    : Array.from({ length: NUM_HOLES }, (_, i) => i);
+                const firstNineDisplay = displayOrder.slice(0, 9);
+                const secondNineDisplay = displayOrder.slice(9, 18);
+                const holeSequence = this.getHoleSequence();
+                const playableHoles = new Set(holeSequence);
+                const holeSequenceIndex = new Map(holeSequence.map((h, idx) => [h, idx]));
+                const selectedParTotal = this.calculateTotal(holeSequence.map((h) => this.state.holePars[h] || 0));
+                const firstNinePlayable = firstNineDisplay.filter((h) => playableHoles.has(h));
+                const secondNinePlayable = secondNineDisplay.filter((h) => playableHoles.has(h));
+                const activePlayerIndices = this.getActivePlayerIndices();
+                const activePlayerCount = activePlayerIndices.length;
+                const playerTabOrder = new Map(activePlayerIndices.map((idx, order) => [idx, order]));
+
+
+                // Only render players who have provided a real name (not the prompt)
+                this.state.players.forEach((player, playerIndex) => {
+                    if (!this.isPlayerActive(player)) return;
+                    // Calculate totals
+                    const frontNineStrokes = this.calculateTotal(firstNinePlayable.map((h) => player.strokes[h] || 0));
+                    const backNineStrokes = this.calculateTotal(secondNinePlayable.map((h) => player.strokes[h] || 0));
+                    const totalStrokes = this.calculateTotal(holeSequence.map((h) => player.strokes[h] || 0));
+                    const scoreToPar = totalStrokes - selectedParTotal;
+                    
+                    const frontNinePutts = this.calculateTotal(firstNinePlayable.map((h) => player.putts[h] || 0));
+                    const backNinePutts = this.calculateTotal(secondNinePlayable.map((h) => player.putts[h] || 0));
+                    const totalPutts = this.calculateTotal(holeSequence.map((h) => player.putts[h] || 0));
+
+
+                    // --- Row for STROKES (main score) ---
+                    let strokesRowHtml = `<tr class="player-row bg-white hover:bg-gray-50 transition player-start">
+                        <td class="sticky-col font-bold whitespace-nowrap bg-white text-golf-dark text-sm">
+                            ${player.name} <span class="text-xs text-gray-500">(Strokes)</span>
+                        </td>`;
+                    
+                    // First 9 display inputs
+                    for (const h of firstNineDisplay) {
+                        const isPlayable = playableHoles.has(h);
+                        const tabOrder = holeSequenceIndex.has(h) ? holeSequenceIndex.get(h) : (NUM_HOLES + h);
+                        const playerOrder = playerTabOrder.has(playerIndex)
+                            ? playerTabOrder.get(playerIndex)
+                            : playerIndex;
+                        const tabIndexBase = ((tabOrder * Math.max(1, activePlayerCount)) + playerOrder) * 2;
+                        const inputDisabled = this.state.isLocked || !isPlayable;
+                        strokesRowHtml += `<td class="text-center">
+                            <input type="number" min="0" max="15" value="${player.strokes[h] > 0 ? player.strokes[h] : ''}" 
+                                data-player="${playerIndex}" data-hole="${h}" data-type="strokes" 
+                                oninput="app.updateScore(${playerIndex}, ${h}, 'strokes', this.value)" 
+                                tabindex="${tabIndexBase + 1}"
+                                class="score-card-input ${!isPlayable ? '!bg-gray-100 !text-gray-400' : ''}" ${inputDisabled ? 'disabled' : ''}>
+                        </td>`;
+                    }
+                    
+                    // Front 9 Total
+                        strokesRowHtml += `<td class="text-center font-bold text-base total-cell">${frontNineStrokes > 0 ? frontNineStrokes : '-'}</td>`;
+
+                    // Second 9 display inputs
+                    for (const h of secondNineDisplay) {
+                        const isPlayable = playableHoles.has(h);
+                        const tabOrder = holeSequenceIndex.has(h) ? holeSequenceIndex.get(h) : (NUM_HOLES + h);
+                        const playerOrder = playerTabOrder.has(playerIndex)
+                            ? playerTabOrder.get(playerIndex)
+                            : playerIndex;
+                        const tabIndexBase = ((tabOrder * Math.max(1, activePlayerCount)) + playerOrder) * 2;
+                        const inputDisabled = this.state.isLocked || !isPlayable;
+                        strokesRowHtml += `<td class="text-center">
+                            <input type="number" min="0" max="15" value="${player.strokes[h] > 0 ? player.strokes[h] : ''}" 
+                                data-player="${playerIndex}" data-hole="${h}" data-type="strokes" 
+                                oninput="app.updateScore(${playerIndex}, ${h}, 'strokes', this.value)" 
+                                tabindex="${tabIndexBase + 1}"
+                                class="score-card-input ${!isPlayable ? '!bg-gray-100 !text-gray-400' : ''}" ${inputDisabled ? 'disabled' : ''}>
+                        </td>`;
+                    }
+                    
+                    // Back 9 Total
+                    strokesRowHtml += `<td class="text-center font-bold text-base total-cell">${backNineStrokes > 0 ? backNineStrokes : '-'}</td>`;
+                    
+                    // Grand Total
+                    strokesRowHtml += `<td class="text-center font-bold text-lg total-cell">${totalStrokes > 0 ? totalStrokes : '-'}</td>`;
+                    
+                    // To Par
+                    // use darker styling for negative (under par) values for better contrast
+                    const toParClass = scoreToPar > 0 ? 'text-red-600' : (scoreToPar < 0 ? 'text-golf-dark' : 'text-gray-700');
+                    strokesRowHtml += `<td class="text-center font-bold text-lg ${toParClass} total-cell">
+                        ${totalStrokes > 0 ? (scoreToPar > 0 ? '+' : '') + scoreToPar : '-'}
+                    </td></tr>`;
+                    tableBody.innerHTML += strokesRowHtml;
+
+
+                    // --- Row for PUTTS ---
+                    let puttsRowHtml = `<tr class="player-row bg-gray-50 hover:bg-gray-100 transition">
+                        <td class="sticky-col font-normal whitespace-nowrap text-xs text-gray-600">
+                            ${player.name} <span class="text-xs text-gray-400">(Putts)</span>
+                        </td>`;
+                        
+                    // First 9 display inputs
+                    for (const h of firstNineDisplay) {
+                        const isPlayable = playableHoles.has(h);
+                        const tabOrder = holeSequenceIndex.has(h) ? holeSequenceIndex.get(h) : (NUM_HOLES + h);
+                        const playerOrder = playerTabOrder.has(playerIndex)
+                            ? playerTabOrder.get(playerIndex)
+                            : playerIndex;
+                        const tabIndexBase = ((tabOrder * Math.max(1, activePlayerCount)) + playerOrder) * 2;
+                        const inputDisabled = this.state.isLocked || !isPlayable;
+                        puttsRowHtml += `<td class="text-center">
+                            <input type="number" min="0" max="6" value="${player.putts[h] > 0 ? player.putts[h] : ''}" 
+                                data-player="${playerIndex}" data-hole="${h}" data-type="putts" 
+                                oninput="app.updateScore(${playerIndex}, ${h}, 'putts', this.value)" 
+                                tabindex="${tabIndexBase + 2}"
+                                class="score-card-input !w-10 ${!isPlayable ? '!bg-gray-100 !text-gray-400' : '!bg-gray-200'}" ${inputDisabled ? 'disabled' : ''}>
+                        </td>`;
+                    }
+                    
+                    // Front 9 Putts Total
+                    puttsRowHtml += `<td class="text-center font-normal text-sm total-cell">${frontNinePutts > 0 ? frontNinePutts : '-'}</td>`;
+
+                    // Second 9 display inputs
+                    for (const h of secondNineDisplay) {
+                        const isPlayable = playableHoles.has(h);
+                        const tabOrder = holeSequenceIndex.has(h) ? holeSequenceIndex.get(h) : (NUM_HOLES + h);
+                        const playerOrder = playerTabOrder.has(playerIndex)
+                            ? playerTabOrder.get(playerIndex)
+                            : playerIndex;
+                        const tabIndexBase = ((tabOrder * Math.max(1, activePlayerCount)) + playerOrder) * 2;
+                        const inputDisabled = this.state.isLocked || !isPlayable;
+                        puttsRowHtml += `<td class="text-center">
+                            <input type="number" min="0" max="6" value="${player.putts[h] > 0 ? player.putts[h] : ''}" 
+                                data-player="${playerIndex}" data-hole="${h}" data-type="putts" 
+                                oninput="app.updateScore(${playerIndex}, ${h}, 'putts', this.value)" 
+                                tabindex="${tabIndexBase + 2}"
+                                class="score-card-input !w-10 ${!isPlayable ? '!bg-gray-100 !text-gray-400' : '!bg-gray-200'}" ${inputDisabled ? 'disabled' : ''}>
+                        </td>`;
+                    }
+                    
+                    // Back 9 Putts Total
+                    puttsRowHtml += `<td class="text-center font-normal text-sm total-cell">${backNinePutts > 0 ? backNinePutts : '-'}</td>`;
+                    
+                    // Grand Total Putts
+                    puttsRowHtml += `<td class="text-center font-normal text-sm total-cell">${totalPutts > 0 ? totalPutts : '-'}</td>`;
+                    
+                    // Empty cell for To Par column
+                    puttsRowHtml += `<td class="text-center font-normal text-sm bg-green-200">-</td></tr>`;
+                    tableBody.innerHTML += puttsRowHtml;
+                    
+                    
+                    // --- Row for CUMULATIVE STROKES (per hole) ---
+                    let cumulativeRowHtml = `<tr class="player-row bg-white hover:bg-gray-50 transition player-end">
+                        <td class="sticky-col font-normal whitespace-nowrap text-xs text-gray-600">
+                            ${player.name} <span class="text-xs text-gray-400">(Total Strokes)</span>
+                        </td>`;
+                    
+                    let cumulativeStrokes = 0;
+                    
+                    // Build a map of which display positions correspond to which hole indices
+                    for (let displayPos = 0; displayPos < NUM_HOLES; displayPos++) {
+                        const holeIndex = displayOrder[displayPos];
+                        
+                        if (playableHoles.has(holeIndex)) {
+                            // This hole is being played
+                            cumulativeStrokes += player.strokes[holeIndex];
+                            
+                            const cumClass = 'text-golf-dark';
+                            cumulativeRowHtml += `<td class="text-center text-xs font-medium ${cumClass}">
+                                ${player.strokes[holeIndex] > 0 ? cumulativeStrokes : '-'}
+                            </td>`;
+                        } else {
+                            // This hole is not being played
+                            cumulativeRowHtml += `<td class="text-center text-xs font-medium text-gray-400">
+                                -
+                            </td>`;
+                        }
+                        
+                        // Add total cells for front 9 (after position 8) and back 9 (after position 17)
+                        if (displayPos === 8) {
+                            cumulativeRowHtml += `<td class="text-center font-medium text-base total-cell">${frontNineStrokes > 0 ? frontNineStrokes : '-'}</td>`;
+                        } else if (displayPos === 17) {
+                            cumulativeRowHtml += `<td class="text-center font-medium text-base total-cell">${backNineStrokes > 0 ? backNineStrokes : '-'}</td>`;
+                        }
+                    }
+
+                    // Add empty cells for Grand Total and To Par columns
+                    cumulativeRowHtml += `<td class="text-center font-medium text-base total-cell">${totalStrokes > 0 ? totalStrokes : '-'}</td>`;
+                    cumulativeRowHtml += `<td class="text-center font-medium text-base total-cell">-</td></tr>`;
+                    
+                    tableBody.innerHTML += cumulativeRowHtml;
+
+                });
+            }
+
+            // --- Utility Functions (showMessage, handleResetRound, prepareRoundForSave, handleSaveRound, loadSavedRoundsView, loadRoundToScorecard, deleteRound are unchanged) ---
+
+            showMessage(message, type = 'info') {
+                this.messageBox.textContent = message;
+                this.messageBox.classList.remove('hidden', 'bg-red-100', 'text-red-800', 'bg-green-100', 'text-green-800', 'bg-blue-100', 'text-blue-800');
+
+                if (type === 'error') {
+                    this.messageBox.classList.add('bg-red-100', 'text-red-800');
+                } else if (type === 'success') {
+                    this.messageBox.classList.add('bg-green-100', 'text-green-800');
+                } else {
+                    this.messageBox.classList.add('bg-blue-100', 'text-blue-800');
+                }
+
+                // Make sure feedback is visible even if user is scrolled near the score table/buttons.
+                this.messageBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+                // Auto-hide after 5 seconds.
+                clearTimeout(this.messageHideTimer);
+                this.messageHideTimer = setTimeout(() => {
+                    this.messageBox.classList.add('hidden');
+                }, 5000);
+            }
+
+            handleResetRound() {
+                if (!window.confirm("Are you sure you want to reset the current round? All scores, names, and course info will be cleared.")) return;
+
+                // Clear setup inputs in the DOM
+                this.courseNameInput.value = '';
+                this.roundDateInput.value = this.getCurrentDateString();
+                this.holes18Radio.checked = true;
+                this.startFrontRadio.checked = true;
+                for (let i = 0; i < NUM_PLAYERS; i++) {
+                    const input = document.getElementById(`player-${i}-name`);
+                    if (input) input.value = '';
+                }
+
+                // Reset state to blank
+                this.state = {
+                    courseName: '',
+                    roundDate: this.getCurrentDateString(),
+                    holePars: [...this.defaultPar],
+                    holesPlaying: 18,
+                    startingHole: 1,
+                    playerCount: 1,
+                    players: Array.from({ length: NUM_PLAYERS }, (_, i) => ({
+                        name: '',
+                        strokes: Array(NUM_HOLES).fill(0),
+                        putts: Array(NUM_HOLES).fill(0),
+                    })),
+                    isLocked: false,
+                };
+
+                this.playerCountRadios.forEach((radio) => {
+                    radio.checked = parseInt(radio.value, 10) === 1;
+                });
+                this.updatePlayerInputVisibility();
+
+                this.lockToggle.checked = false;
+                this.updateLockStatusUI(false);
+                this.clearDraftFromStorage();
+                this.renderScorecard();
+                this.showMessage("Round reset! Enter course and player info to start fresh.", 'info');
+            }
+            
+            prepareRoundForSave() {
+                const totalPar = this.calculateTotal(this.state.holePars);
+
+                // Only include active players (those who entered a name)
+                const activePlayers = this.state.players.filter(p => this.isPlayerActive(p));
+                const playersWithTotals = activePlayers.map(player => {
+                    const totalStrokes = this.calculateTotal(player.strokes);
+                    return {
+                        ...player,
+                        totalScore: totalStrokes,
+                        scoreToPar: totalStrokes - totalPar,
+                    };
+                });
+
+                return {
+                    courseName: this.state.courseName,
+                    date: this.state.roundDate,
+                    par: this.state.holePars,
+                    players: playersWithTotals,
+                    timestamp: new Date().getTime(), // For sorting and unique ID if 'id' wasn't auto-incremented
+                };
+            }
+
+            async handleSaveRound() {
+                const roundData = this.prepareRoundForSave();
+
+                if (!roundData.courseName) {
+                    this.showMessage("Please enter a Course Name before saving.", 'error');
+                    return;
+                }
+                
+                // Simple validation check: ensure at least one stroke was recorded
+                const totalStrokesRecorded = roundData.players.reduce((sum, p) => sum + p.totalScore, 0);
+                if (totalStrokesRecorded === 0) {
+                    this.showMessage("Please enter scores for at least one hole before saving.", 'error');
+                    return;
+                }
+
+
+                this.saveRoundBtn.disabled = true;
+                this.saveRoundBtn.textContent = 'Saving...';
+
+                try {
+                    await saveRound(roundData);
+                    this.saveDraftToStorage();
+                    this.showMessage("Round saved locally in this browser (IndexedDB). Open Saved Rounds to view it.", 'success');
+                } catch (error) {
+                    console.error("Error saving round:", error);
+                    this.showMessage(`Error saving round: ${error.message}. Check console for details.`, 'error');
+                } finally {
+                    this.saveRoundBtn.disabled = false;
+                    this.saveRoundBtn.textContent = '💾 Save Round Offline';
+                    this.loadSavedRoundsView(); // Refresh the saved view
+                }
+            }
+
+            async exportRounds() {
+                try {
+                    const rounds = await loadAllRounds();
+                    const dataStr = JSON.stringify(rounds, null, 2);
+                    const blob = new Blob([dataStr], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+                    a.href = url;
+                    a.download = `golf_rounds_${stamp}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    URL.revokeObjectURL(url);
+                    this.showMessage('Export started. Check your downloads folder.', 'success');
+                } catch (err) {
+                    console.error('Export failed:', err);
+                    this.showMessage('Export failed. See console for details.', 'error');
+                }
+            }
+
+            csvEscape(value) {
+                const str = value === null || value === undefined ? '' : String(value);
+                if (str.includes('"') || str.includes(',') || str.includes('\n')) {
+                    return `"${str.replace(/"/g, '""')}"`;
+                }
+                return str;
+            }
+
+            async exportRoundsCsv() {
+                try {
+                    const rounds = await loadAllRounds();
+                    if (!Array.isArray(rounds) || rounds.length === 0) {
+                        this.showMessage('No saved rounds to export.', 'info');
+                        return;
+                    }
+
+                    const headers = [
+                        'round_id',
+                        'course_name',
+                        'round_date',
+                        'timestamp',
+                        'player_name',
+                        'total_score',
+                        'score_to_par',
+                    ];
+
+                    for (let i = 1; i <= NUM_HOLES; i++) {
+                        headers.push(`par_h${i}`);
+                    }
+                    for (let i = 1; i <= NUM_HOLES; i++) {
+                        headers.push(`strokes_h${i}`);
+                    }
+                    for (let i = 1; i <= NUM_HOLES; i++) {
+                        headers.push(`putts_h${i}`);
+                    }
+
+                    const lines = [headers.join(',')];
+
+                    rounds.forEach((round) => {
+                        const par = Array.isArray(round.par) ? round.par : Array(NUM_HOLES).fill('');
+                        const players = Array.isArray(round.players) ? round.players : [];
+
+                        players.forEach((player) => {
+                            const strokes = Array.isArray(player.strokes) ? player.strokes : Array(NUM_HOLES).fill('');
+                            const putts = Array.isArray(player.putts) ? player.putts : Array(NUM_HOLES).fill('');
+
+                            const row = [
+                                round.id ?? '',
+                                round.courseName ?? round.course_name ?? '',
+                                round.date ?? round.roundDate ?? round.round_date ?? '',
+                                round.timestamp ?? '',
+                                player.name ?? '',
+                                player.totalScore ?? '',
+                                player.scoreToPar ?? '',
+                            ];
+
+                            for (let i = 0; i < NUM_HOLES; i++) row.push(par[i] ?? '');
+                            for (let i = 0; i < NUM_HOLES; i++) row.push(strokes[i] ?? '');
+                            for (let i = 0; i < NUM_HOLES; i++) row.push(putts[i] ?? '');
+
+                            lines.push(row.map((v) => this.csvEscape(v)).join(','));
+                        });
+                    });
+
+                    const csv = lines.join('\n');
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+                    a.href = url;
+                    a.download = `golf_rounds_${stamp}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    URL.revokeObjectURL(url);
+                    this.showMessage('CSV export started. Open it in Excel or Google Sheets.', 'success');
+                } catch (err) {
+                    console.error('CSV export failed:', err);
+                    this.showMessage('CSV export failed. See console for details.', 'error');
+                }
+            }
+
+            returnFromHelp() {
+                if (!this.helpLinkContext) return;
+
+                const { scrollX, scrollY, activeId, selectionStart, selectionEnd } = this.helpLinkContext;
+                window.scrollTo({ left: scrollX || 0, top: scrollY || 0, behavior: 'smooth' });
+
+                if (activeId) {
+                    const target = document.getElementById(activeId);
+                    if (target) {
+                        setTimeout(() => {
+                            target.focus();
+                            if ((target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')
+                                && typeof selectionStart === 'number'
+                                && typeof selectionEnd === 'number') {
+                                target.setSelectionRange(selectionStart, selectionEnd);
+                            }
+                        }, 220);
+                    }
+                }
+
+                this.helpReturnBtns.forEach((btn) => btn.classList.add('hidden'));
+
+                if (this.tempReturnFocusId) {
+                    const tempTarget = document.getElementById(this.tempReturnFocusId);
+                    if (tempTarget) tempTarget.removeAttribute('id');
+                    this.tempReturnFocusId = null;
+                }
+            }
+
+            importRounds() {
+                if (!this.importRoundsInput) return;
+                this.importRoundsInput.value = '';
+                this.importRoundsInput.click();
+            }
+
+            normalizeImportedRound(rawRound, index) {
+                if (!rawRound || typeof rawRound !== 'object') return null;
+
+                const safePar = Array.isArray(rawRound.par) && rawRound.par.length === NUM_HOLES
+                    ? rawRound.par.map((v) => Math.min(7, Math.max(1, parseInt(v, 10) || 0)))
+                    : [...this.defaultPar];
+
+                const totalPar = this.calculateTotal(safePar);
+                const safePlayers = (Array.isArray(rawRound.players) ? rawRound.players : []).map((player) => {
+                    const strokes = Array.isArray(player?.strokes) && player.strokes.length === NUM_HOLES
+                        ? player.strokes.map((v) => parseInt(v, 10) || 0)
+                        : Array(NUM_HOLES).fill(0);
+                    const putts = Array.isArray(player?.putts) && player.putts.length === NUM_HOLES
+                        ? player.putts.map((v) => parseInt(v, 10) || 0)
+                        : Array(NUM_HOLES).fill(0);
+                    const totalScore = this.calculateTotal(strokes);
+
+                    return {
+                        name: this.toTitleCase((player?.name || '').toString().trim()),
+                        strokes,
+                        putts,
+                        totalScore,
+                        scoreToPar: totalScore - totalPar,
+                    };
+                }).filter((p) => p.name.length > 0);
+
+                return {
+                    courseName: (rawRound.courseName || 'Imported Round').toString().trim(),
+                    date: (rawRound.date || this.getCurrentDateString()).toString(),
+                    par: safePar,
+                    players: safePlayers,
+                    timestamp: parseInt(rawRound.timestamp, 10) || (Date.now() + index),
+                };
+            }
+
+            async handleImportRoundsSelection(event) {
+                const file = event?.target?.files?.[0];
+                if (!file) return;
+
+                try {
+                    const fileText = await file.text();
+                    const parsed = JSON.parse(fileText);
+                    if (!Array.isArray(parsed)) {
+                        this.showMessage('Import failed: JSON must be an array of saved rounds.', 'error');
+                        return;
+                    }
+
+                    const normalized = parsed
+                        .map((round, i) => this.normalizeImportedRound(round, i))
+                        .filter((round) => round && round.courseName);
+
+                    if (normalized.length === 0) {
+                        this.showMessage('No valid rounds found in file.', 'error');
+                        return;
+                    }
+
+                    const importedCount = await importRoundsToDB(normalized);
+                    this.loadSavedRoundsView();
+                    this.showMessage(`Imported ${importedCount} round(s). They are now available under Saved Rounds.`, 'success');
+                } catch (error) {
+                    console.error('Import failed:', error);
+                    this.showMessage('Import failed. Use a JSON file exported from this app.', 'error');
+                }
+            }
+
+            // --- Saved Rounds View Logic ---
+
+            async loadSavedRoundsView() {
+                const listContainer = document.getElementById('saved-rounds-list');
+                listContainer.innerHTML = '<p class="text-gray-500 text-center">Loading...</p>';
+
+                try {
+                    const rounds = await loadAllRounds();
+                    
+                    if (rounds.length === 0) {
+                        listContainer.innerHTML = '<p class="text-gray-500 text-center py-8">No saved rounds found yet. Start scoring!</p>';
+                        return;
+                    }
+
+                    // Sort by newest first
+                    rounds.sort((a, b) => b.timestamp - a.timestamp);
+
+                    const html = rounds.map(round => {
+                        const totalPar = this.calculateTotal(round.par);
+                        
+                        // Determine the winner and format player scores
+                        // Filter out players with 0 total strokes (if they didn't play)
+                        // Show only players who were active in the saved round (non-empty names)
+                        const activePlayers = (round.players || []).filter(p => (p.name || '').trim().length > 0 && p.totalScore > 0);
+                        const sortedPlayers = [...activePlayers].sort((a, b) => a.totalScore - b.totalScore);
+                        const winner = sortedPlayers[0];
+                        
+                        const playerScoresHtml = activePlayers.map(p => `
+                            <li class="flex justify-between items-center text-sm ${p.name === winner?.name ? 'font-bold text-golf-green' : 'text-gray-700'}">
+                                <span>${p.name}</span>
+                                <span class="${p.scoreToPar > 0 ? 'text-red-500' : (p.scoreToPar < 0 ? 'text-green-600' : 'text-gray-700')}">
+                                    ${p.totalScore} (${p.scoreToPar > 0 ? '+' : ''}${p.scoreToPar})
+                                </span>
+                            </li>
+                        `).join('');
+
+                        return `
+                            <div class="bg-gray-100 p-4 rounded-lg shadow-md border-l-4 border-golf-green">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h4 class="text-xl font-bold text-golf-dark">${round.courseName}</h4>
+                                    <span class="text-sm text-gray-500">${round.date}</span>
+                                </div>
+                                <p class="text-xs text-gray-600 mb-3">Total Course Par: <span class="total-cell">${totalPar}</span></p>
+                                
+                                <ul class="space-y-1">
+                                    ${playerScoresHtml}
+                                </ul>
+                                <button onclick="app.loadRoundToScorecard(${round.id})" class="mt-4 w-full btn-primary py-2 rounded-md text-sm hover:opacity-95 transition">
+                                    View Full Scorecard
+                                </button>
+                                <button onclick="app.deleteRound(${round.id})" class="mt-2 w-full bg-red-500 text-white py-2 rounded-md text-sm hover:bg-red-600 transition">
+                                    Delete Round
+                                </button>
+                            </div>
+                        `;
+                    }).join('');
+
+                    listContainer.innerHTML = html;
+
+                } catch (error) {
+                    console.error("Error loading saved rounds:", error);
+                    listContainer.innerHTML = `<p class="text-red-500 text-center py-8">Failed to load rounds: ${error.message}</p>`;
+                }
+            }
+            
+            async loadRoundToScorecard(roundId) {
+                const db = await openDB();
+                const transaction = db.transaction(STORE_NAME, 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.get(roundId);
+
+                request.onsuccess = (event) => {
+                    const round = event.target.result;
+                    if (!round) return;
+                    
+                    if (!window.confirm("Loading this round will replace the current unsaved scores. Continue?")) return;
+
+                    // Reconstruct the simple state from the loaded data
+                    // Normalize loaded course name to ALL CAPS for consistency
+                    this.state.courseName = (round.courseName || '').toUpperCase();
+                    this.state.roundDate = round.date;
+                    this.state.holePars = round.par || this.defaultPar;
+                    this.state.isLocked = true; // Automatically lock loaded rounds
+
+                    // Map loaded players into the fixed-size players array, and fill remaining slots with the prompt
+                    const loadedPlayers = (round.players || []).map(p => ({
+                        name: this.toTitleCase(p.name || ''),
+                        strokes: p.strokes || Array(NUM_HOLES).fill(0),
+                        putts: p.putts || Array(NUM_HOLES).fill(0),
+                    }));
+
+                    this.state.players = Array.from({ length: NUM_PLAYERS }, (_, i) => {
+                        return loadedPlayers[i] || {
+                            name: this.playerNamePrompt,
+                            strokes: Array(NUM_HOLES).fill(0),
+                            putts: Array(NUM_HOLES).fill(0),
+                        };
+                    });
+                    const activeLoadedCount = this.state.players.filter((p) => this.isPlayerActive(p)).length;
+                    this.state.playerCount = Math.min(NUM_PLAYERS, Math.max(1, activeLoadedCount || 1));
+
+                    // Update UI inputs
+                    this.courseNameInput.value = this.state.courseName;
+                    this.roundDateInput.value = this.state.roundDate;
+                    this.state.players.forEach((player, i) => {
+                        const input = document.getElementById(`player-${i}-name`);
+                        if (input) input.value = player.name;
+                    });
+                    this.playerCountRadios.forEach((radio) => {
+                        radio.checked = parseInt(radio.value, 10) === this.state.playerCount;
+                    });
+                    this.updatePlayerInputVisibility();
+                    
+                    // Update lock toggle UI
+                    this.lockToggle.checked = this.state.isLocked;
+                    this.updateLockStatusUI(this.state.isLocked);
+                    this.saveDraftToStorage();
+                    
+                    // Switch view and render
+                    this.switchView('current');
+                    this.renderScorecard();
+                    this.showMessage(`Round from ${round.courseName} (${round.date}) loaded successfully! The scorecard is currently LOCKED.`, 'info');
+                };
+
+                request.onerror = (event) => {
+                    console.error("Error loading specific round:", event.target.error);
+                    this.showMessage("Error loading round details.", 'error');
+                };
+            }
+            
+            async deleteRound(roundId) {
+                if (!window.confirm("Are you sure you want to permanently delete this saved round?")) return;
+
+                try {
+                    const db = await openDB();
+                    await new Promise((resolve, reject) => {
+                        const transaction = db.transaction(STORE_NAME, 'readwrite');
+                        const store = transaction.objectStore(STORE_NAME);
+                        const request = store.delete(roundId);
+
+                        request.onsuccess = () => resolve();
+                        request.onerror = (event) => reject(event.target.error);
+                    });
+                    this.showMessage("Round deleted successfully.", 'success');
+                    this.loadSavedRoundsView(); // Refresh the list
+                } catch (error) {
+                    console.error("Error deleting round:", error);
+                    this.showMessage(`Error deleting round: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        let deferredInstallPrompt = null;
+
+        function setupInstallButton() {
+            const installBtn = document.getElementById('install-app-btn');
+            const installCta = document.getElementById('install-app-cta');
+            if (!installBtn || !installCta) return;
+
+            window.addEventListener('beforeinstallprompt', (event) => {
+                event.preventDefault();
+                deferredInstallPrompt = event;
+                installCta.classList.add('visible');
+                installCta.setAttribute('aria-hidden', 'false');
+            });
+
+            installBtn.addEventListener('click', async () => {
+                if (!deferredInstallPrompt) return;
+                deferredInstallPrompt.prompt();
+                await deferredInstallPrompt.userChoice;
+                deferredInstallPrompt = null;
+                installCta.classList.remove('visible');
+                installCta.setAttribute('aria-hidden', 'true');
+            });
+
+            window.addEventListener('appinstalled', () => {
+                deferredInstallPrompt = null;
+                installCta.classList.remove('visible');
+                installCta.setAttribute('aria-hidden', 'true');
+            });
+        }
+
+        async function registerServiceWorker() {
+            if (!('serviceWorker' in navigator)) return;
+            try {
+                const registration = await navigator.serviceWorker.register('./sw.js', {
+                    updateViaCache: 'none'
+                });
+                await registration.update();
+
+                if (registration.waiting) {
+                    registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+                }
+
+                let refreshing = false;
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (refreshing) return;
+                    refreshing = true;
+                    window.location.reload();
+                });
+
+                // Check periodically so installed PWAs pick up fresh SW versions without manual refresh.
+                setInterval(() => {
+                    registration.update().catch(() => {});
+                }, 60000);
+
+                registration.addEventListener('updatefound', () => {
+                    const newWorker = registration.installing;
+                    if (!newWorker) return;
+
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            newWorker.postMessage({ type: 'SKIP_WAITING' });
+                        }
+                    });
+                });
+            } catch (error) {
+                console.error('Service worker registration failed:', error);
+            }
+        }
+
+        // Initialize the app on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            setupInstallButton();
+            registerServiceWorker();
+
+            if (!('indexedDB' in window)) {
+                document.getElementById('current-round-view').innerHTML = '<p class="text-red-600 p-8 text-center">Your browser does not support IndexedDB for offline storage. Please use a modern browser.</p>';
+                return;
+            }
+            window.app = new GolfScorerApp();
+        });
+
+    </script>
+</body>
+</html>
