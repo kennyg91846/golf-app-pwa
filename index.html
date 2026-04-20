@@ -1091,10 +1091,42 @@
                 const selector = `input[data-player="${firstPlayerIndex}"][data-hole="${firstHoleIndex}"][data-type="strokes"]`;
                 const input = this.scorecardTable.querySelector(selector);
 
-                if (input && !input.disabled) {
-                    input.focus();
-                    input.select();
+                this.focusScoreInput(input);
+            }
+
+            getScorecardScroller() {
+                if (!this.scorecardTable) return null;
+                return this.scorecardTable.parentElement;
+            }
+
+            ensureScoreInputVisible(input) {
+                if (!this.scorecardTable || !input) return;
+
+                const scroller = this.getScorecardScroller();
+                if (!scroller) return;
+
+                const stickyCol = this.scorecardTable.querySelector('.sticky-col')
+                    || this.scorecardTable.querySelector('.sticky-col-header');
+                const stickyWidth = stickyCol ? stickyCol.getBoundingClientRect().width : 0;
+
+                const scrollerRect = scroller.getBoundingClientRect();
+                const inputRect = input.getBoundingClientRect();
+                const leftEdge = scrollerRect.left + stickyWidth + 12;
+                const rightEdge = scrollerRect.right - 8;
+
+                if (inputRect.left < leftEdge) {
+                    scroller.scrollLeft -= (leftEdge - inputRect.left);
+                } else if (inputRect.right > rightEdge) {
+                    scroller.scrollLeft += (inputRect.right - rightEdge);
                 }
+            }
+
+            focusScoreInput(input) {
+                if (!input || input.disabled) return;
+
+                input.focus({ preventScroll: true });
+                this.ensureScoreInputVisible(input);
+                input.select();
             }
 
             // --- Scorecard Input Handling ---
@@ -1129,10 +1161,7 @@
                             if (!target) return;
                             const selector = `input[data-player="${target.playerIndex}"][data-hole="${target.holeIndex}"][data-type="${target.type}"]`;
                             const puttsInput = this.scorecardTable.querySelector(selector);
-                            if (puttsInput && !puttsInput.disabled) {
-                                puttsInput.focus();
-                                puttsInput.select();
-                            }
+                            this.focusScoreInput(puttsInput);
                         }, 300);
                     }
                 } else if (type === 'putts') {
@@ -1149,10 +1178,7 @@
                 if (nextFocusTarget) {
                     const selector = `input[data-player="${nextFocusTarget.playerIndex}"][data-hole="${nextFocusTarget.holeIndex}"][data-type="${nextFocusTarget.type}"]`;
                     const input = this.scorecardTable.querySelector(selector);
-                    if (input && !input.disabled) {
-                        input.focus();
-                        input.select();
-                    }
+                    this.focusScoreInput(input);
                 }
             }
 
