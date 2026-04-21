@@ -1,0 +1,1 @@
+Offline Golf Scorer — A mobile-first Progressive Web App (PWA) for tracking golf rounds and scores. Works fully offline after the first load. Install it to your home screen on iOS or Android for a native app experience. Built with vanilla HTML, Tailwind CSS, and a service worker for offline caching. 
