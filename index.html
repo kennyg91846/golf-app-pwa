@@ -145,7 +145,8 @@
             cursor: not-allowed;
         }
         .header-row th {
-            padding: 0.75rem 0.5rem;
+            padding: 0.18rem 0.4rem;
+            line-height: 1.1;
             font-weight: 600;
             border-bottom: 2px solid var(--stroke-dark);
         }
@@ -546,22 +547,7 @@
 
             <!-- Scorecard controls: Lock toggle + Collapsible Pars -->
             <div class="flex flex-col gap-3 mb-4">
-
-                <!-- Prevent accidental edits toggle -->
-                <div class="lock-row">
-                    <div>
-                        <div class="lock-row-label">🔒 Prevent accidental edits</div>
-                        <div class="text-xs text-gray-500 mt-0.5">Turn on after entering scores to lock them</div>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span id="lock-status" class="lock-row-state text-red-600">OFF</span>
-                        <input type="checkbox" id="lock-toggle" class="hidden">
-                        <label for="lock-toggle" id="lock-toggle-label" class="toggle-switch cursor-pointer relative inline-block rounded-full transition-colors duration-200 shadow-lg">
-                            <span class="toggle-circle absolute bg-white rounded-full transition-transform duration-200 shadow-md"></span>
-                        </label>
-                    </div>
-                </div>
-
+                <a class="help-link self-end" href="#help-lock-and-par" aria-label="Help: Lock and Par" title="Help: Lock and Par">?</a>
                 <!-- Collapsible Customize Pars -->
                 <div>
                     <div class="pars-collapsible-header" id="pars-collapsible-trigger" role="button" aria-expanded="false" aria-controls="pars-collapsible-body" tabindex="0">
@@ -578,7 +564,21 @@
                         </button>
                     </div>
                 </div>
-                <a class="help-link self-end" href="#help-lock-and-par" aria-label="Help: Lock and Par" title="Help: Lock and Par">?</a>
+
+                <!-- Prevent accidental edits toggle -->
+                <div class="lock-row">
+                    <div>
+                        <div class="lock-row-label">🔒 Prevent accidental edits</div>
+                        <div class="text-xs text-gray-500 mt-0.5">Turn on after entering scores to lock them</div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span id="lock-status" class="lock-row-state text-red-600">OFF</span>
+                        <input type="checkbox" id="lock-toggle" class="hidden">
+                        <label for="lock-toggle" id="lock-toggle-label" class="toggle-switch cursor-pointer relative inline-block rounded-full transition-colors duration-200 shadow-lg">
+                            <span class="toggle-circle absolute bg-white rounded-full transition-transform duration-200 shadow-md"></span>
+                        </label>
+                    </div>
+                </div>
             </div>
 
             <!-- Scorecard Table -->
@@ -1184,14 +1184,16 @@
                 // Ignore update if locked
                 if (this.state.isLocked) return;
 
-                const val = parseInt(value) || 0;
+                const rawInput = (value || '').toString();
+                const normalizedValue = rawInput.replace(/\D/g, '').slice(0, 2);
+                const val = normalizedValue === '' ? 0 : parseInt(normalizedValue, 10);
                 let nextFocusTarget = { playerIndex, holeIndex, type };
                 if (type === 'strokes') {
                     this.state.players[playerIndex].strokes[holeIndex] = val;
 
                     // Delay auto-advance to putts so two-digit strokes can be entered naturally.
                     clearTimeout(this.autoAdvanceTimer);
-                    const rawValue = (value || '').toString().trim();
+                    const rawValue = normalizedValue;
                     if (rawValue !== '' && val > 0) {
                         const expectedValue = val;
                         this.autoAdvanceTimer = setTimeout(() => {
@@ -1212,7 +1214,7 @@
                             const selector = `input[data-player="${target.playerIndex}"][data-hole="${target.holeIndex}"][data-type="${target.type}"]`;
                             const puttsInput = this.scorecardTable.querySelector(selector);
                             this.focusScoreInput(puttsInput);
-                        }, 300);
+                        }, 850);
                     }
                 } else if (type === 'putts') {
                     this.state.players[playerIndex].putts[holeIndex] = val;
@@ -1226,9 +1228,21 @@
                 this.renderScorecard();
 
                 if (nextFocusTarget) {
+                    const isSameCell = nextFocusTarget.playerIndex === playerIndex
+                        && nextFocusTarget.holeIndex === holeIndex
+                        && nextFocusTarget.type === type;
                     const selector = `input[data-player="${nextFocusTarget.playerIndex}"][data-hole="${nextFocusTarget.holeIndex}"][data-type="${nextFocusTarget.type}"]`;
                     const input = this.scorecardTable.querySelector(selector);
-                    this.focusScoreInput(input);
+                    if (!input || input.disabled) return;
+
+                    if (isSameCell) {
+                        input.focus({ preventScroll: true });
+                        this.ensureScoreInputVisible(input);
+                        const caret = input.value.length;
+                        try { input.setSelectionRange(caret, caret); } catch (e) { }
+                    } else {
+                        this.focusScoreInput(input);
+                    }
                 }
             }
 
@@ -1391,7 +1405,7 @@
                         const tabIndexBase = ((tabOrder * Math.max(1, activePlayerCount)) + playerOrder) * 2;
                         const inputDisabled = this.state.isLocked || !isPlayable;
                         strokesRowHtml += `<td class="text-center">
-                            <input type="number" min="0" max="15" value="${player.strokes[h] > 0 ? player.strokes[h] : ''}" 
+                            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" value="${player.strokes[h] > 0 ? player.strokes[h] : ''}" 
                                 data-player="${playerIndex}" data-hole="${h}" data-type="strokes" 
                                 oninput="app.updateScore(${playerIndex}, ${h}, 'strokes', this.value)" 
                                 tabindex="${tabIndexBase + 1}"
@@ -1412,7 +1426,7 @@
                         const tabIndexBase = ((tabOrder * Math.max(1, activePlayerCount)) + playerOrder) * 2;
                         const inputDisabled = this.state.isLocked || !isPlayable;
                         strokesRowHtml += `<td class="text-center">
-                            <input type="number" min="0" max="15" value="${player.strokes[h] > 0 ? player.strokes[h] : ''}" 
+                            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" value="${player.strokes[h] > 0 ? player.strokes[h] : ''}" 
                                 data-player="${playerIndex}" data-hole="${h}" data-type="strokes" 
                                 oninput="app.updateScore(${playerIndex}, ${h}, 'strokes', this.value)" 
                                 tabindex="${tabIndexBase + 1}"
