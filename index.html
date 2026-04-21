@@ -323,6 +323,102 @@
         .help-return-btn:hover {
             background: var(--muted-bg);
         }
+
+        /* Step header labels for setup flow */
+        .setup-step-header {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 0.75rem;
+            margin-top: 0.25rem;
+        }
+        .setup-step-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.75rem;
+            height: 1.75rem;
+            border-radius: 9999px;
+            background: var(--golf-green);
+            color: #fff;
+            font-weight: 800;
+            font-size: 0.85rem;
+            border: 2px solid var(--stroke-dark);
+            flex-shrink: 0;
+        }
+        .setup-step-title {
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--golf-dark);
+        }
+        .setup-step-block {
+            background: #fff;
+            border: 2px solid var(--stroke-dark);
+            border-radius: 0.75rem;
+            padding: 0.9rem 1rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Collapsible pars section */
+        .pars-collapsible-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            padding: 0.6rem 0.75rem;
+            border-radius: 0.5rem;
+            background: var(--muted-bg);
+            border: 2px solid var(--stroke-dark);
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--golf-dark);
+            user-select: none;
+            transition: background 0.15s;
+        }
+        .pars-collapsible-header:hover {
+            background: var(--muted-bg-2);
+        }
+        .pars-chevron {
+            transition: transform 0.2s;
+            font-size: 0.8rem;
+        }
+        .pars-chevron.open {
+            transform: rotate(180deg);
+        }
+        .pars-collapsible-body {
+            display: none;
+            padding: 0.75rem 0.75rem 0.25rem;
+            border: 2px solid var(--stroke-dark);
+            border-top: none;
+            border-radius: 0 0 0.5rem 0.5rem;
+            background: #fff;
+        }
+        .pars-collapsible-body.open {
+            display: block;
+        }
+
+        /* New lock toggle row */
+        .lock-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding: 0.7rem 0.9rem;
+            background: #fff;
+            border: 2px solid var(--stroke-dark);
+            border-radius: 0.6rem;
+        }
+        .lock-row-label {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--golf-dark);
+            line-height: 1.3;
+        }
+        .lock-row-state {
+            font-weight: 800;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+        }
     </style>
 </head>
 <body class="font-sans text-golf-dark p-4 lg:p-8">
@@ -330,80 +426,73 @@
     <div class="app-shell">
         <div class="top-bar">
             <div id="install-app-cta" class="install-cta" aria-hidden="true">
-                <span class="install-label">Install</span>
-                <button id="install-app-btn" class="install-btn" type="button" title="Install app" aria-label="Install app to home screen">⤓</button>
+                <span class="install-label">Add to Home Screen</span>
+                <button id="install-app-btn" class="install-btn" type="button" title="Add App to Home Screen — use offline anytime" aria-label="Add app to home screen">⤓</button>
             </div>
         </div>
         <h1 class="text-4xl font-extrabold text-golf-dark mb-6 text-center">
             🏌️ Offline Golf Scorer
         </h1>
 
-        <!-- Navigation Tabs -->
-        <div class="flex flex-col mb-6 gap-2">
-            <div class="flex w-full gap-2">
-                <button id="tab-current-round" class="flex-1 px-4 py-3 text-base font-semibold rounded-lg transition duration-150 ease-in-out bg-golf-green text-white shadow-lg border-2 border-white">
-                    Current Round
-                </button>
-                <button id="tab-saved-rounds" class="flex-1 px-4 py-3 text-base font-semibold transition duration-150 ease-in-out bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-lg border-2 border-black">
-                    Saved Rounds
-                </button>
-            </div>
-            <div class="flex">
-                <button id="export-rounds" class="px-4 py-2 text-sm font-medium rounded-md bg-white border-2 border-black shadow-sm hover:bg-gray-50">
-                    Export JSON
-                </button>
-                <button id="export-rounds-csv" class="ml-2 px-4 py-2 text-sm font-medium rounded-md bg-white border-2 border-black shadow-sm hover:bg-gray-50">
-                    Export CSV
-                </button>
-                <button id="import-rounds" class="ml-2 px-4 py-2 text-sm font-medium rounded-md bg-white border-2 border-black shadow-sm hover:bg-gray-50">
-                    Import
-                </button>
-                <input id="import-rounds-input" type="file" accept="application/json,.json" class="hidden">
-            </div>
-        </div>
-
         <!-- Current Round View -->
         <div id="current-round-view" class="p-6 lg:p-8 rounded-xl shadow-2xl transition-opacity duration-300" style="background-color:#b3e0b3">
-            <h2 class="text-2xl font-bold mb-4 text-golf-dark">Round Setup <a class="help-link" href="#help-round-setup" aria-label="Help: Round Setup" title="Help: Round Setup">?</a></h2>
+            <h2 class="text-2xl font-bold mb-1 text-golf-dark">Round Setup <a class="help-link" href="#help-round-setup" aria-label="Help: Round Setup" title="Help: Round Setup">?</a></h2>
+            <p class="text-sm text-gray-600 mb-4">Fill in the steps below, then tap <strong>Start Scoring</strong>.</p>
             <div id="message-box" class="hidden p-3 mb-4 rounded-lg text-sm" role="alert"></div>
 
-            <!-- Course and Player Setup (Lock toggle removed from here) -->
-            <div class="flex flex-col gap-4 mb-6">
-                <div>
-                    <label for="course-name" class="block text-sm font-medium text-gray-700">Course Name <a class="help-link" href="#help-course-name" aria-label="Help: Course Name" title="Help: Course Name">?</a></label>
-                    <input type="text" id="course-name" placeholder="Enter Course Name" class="setup-meta-input mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-golf-green focus:ring focus:ring-golf-green focus:ring-opacity-50 p-2 border">
+            <!-- Step 1: Course Info -->
+            <div class="setup-step-block">
+                <div class="setup-step-header">
+                    <span class="setup-step-badge">1</span>
+                    <span class="setup-step-title">Course Info</span>
+                    <a class="help-link" href="#help-course-name" aria-label="Help: Course Info" title="Help: Course Info">?</a>
                 </div>
-                <div>
-                    <label for="round-date" class="block text-sm font-medium text-gray-700">Date <a class="help-link" href="#help-date" aria-label="Help: Date" title="Help: Date">?</a></label>
-                    <input type="date" id="round-date" class="setup-meta-input mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-golf-green focus:ring focus:ring-golf-green focus:ring-opacity-50 p-2 border">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Holes to Play <a class="help-link" href="#help-holes" aria-label="Help: Holes to Play" title="Help: Holes to Play">?</a></label>
-                    <div class="flex gap-6">
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" id="holes-9" name="holes-to-play" value="9" class="w-4 h-4">
-                            <span class="text-sm">9 holes</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" id="holes-18" name="holes-to-play" value="18" class="w-4 h-4" checked>
-                            <span class="text-sm">18 holes</span>
-                        </label>
+                <div class="flex flex-col gap-3">
+                    <div>
+                        <label for="course-name" class="block text-sm font-medium text-gray-700">Course Name</label>
+                        <input type="text" id="course-name" placeholder="Enter Course Name" class="setup-meta-input mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-golf-green focus:ring focus:ring-golf-green focus:ring-opacity-50 p-2 border">
+                    </div>
+                    <div>
+                        <label for="round-date" class="block text-sm font-medium text-gray-700">Date</label>
+                        <input type="date" id="round-date" class="setup-meta-input mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-golf-green focus:ring focus:ring-golf-green focus:ring-opacity-50 p-2 border">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Holes to Play <a class="help-link" href="#help-holes" aria-label="Help: Holes to Play" title="Help: Holes to Play">?</a></label>
+                        <div class="flex gap-6">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" id="holes-9" name="holes-to-play" value="9" class="w-4 h-4">
+                                <span class="text-sm">9 holes</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" id="holes-18" name="holes-to-play" value="18" class="w-4 h-4" checked>
+                                <span class="text-sm">18 holes</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Starting Hole <a class="help-link" href="#help-starting-hole" aria-label="Help: Starting Hole" title="Help: Starting Hole">?</a></label>
+                        <div class="flex gap-6">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" id="start-front" name="starting-hole" value="1" class="w-4 h-4" checked>
+                                <span class="text-sm">Front 9 (Hole 1)</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" id="start-back" name="starting-hole" value="10" class="w-4 h-4">
+                                <span class="text-sm">Back 9 (Hole 10)</span>
+                            </label>
+                        </div>
                     </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Starting Hole <a class="help-link" href="#help-starting-hole" aria-label="Help: Starting Hole" title="Help: Starting Hole">?</a></label>
-                    <div class="flex gap-6">
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" id="start-front" name="starting-hole" value="1" class="w-4 h-4" checked>
-                            <span class="text-sm">Front 9 (Hole 1)</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" id="start-back" name="starting-hole" value="10" class="w-4 h-4">
-                            <span class="text-sm">Back 9 (Hole 10)</span>
-                        </label>
-                    </div>
+            </div>
+
+            <!-- Step 2: Players -->
+            <div class="setup-step-block">
+                <div class="setup-step-header">
+                    <span class="setup-step-badge">2</span>
+                    <span class="setup-step-title">Players</span>
+                    <a class="help-link" href="#help-player-names" aria-label="Help: Players" title="Help: Players">?</a>
                 </div>
-                <div>
+                <div class="mb-3">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Number of Players <a class="help-link" href="#help-player-count" aria-label="Help: Number of Players" title="Help: Number of Players">?</a></label>
                     <div class="flex gap-3">
                         <label class="flex items-center gap-1 cursor-pointer px-3 py-1 rounded-md border border-gray-300 bg-white">
@@ -424,44 +513,48 @@
                         </label>
                     </div>
                 </div>
-            </div>
-
-            <!-- Player Name Inputs -->
-            <div class="flex flex-col gap-4 mb-8">
-                <div data-player-index="0">
-                    <label for="player-0-name" class="block text-sm font-medium text-gray-700">Player 1 Name <a class="help-link" href="#help-player-names" aria-label="Help: Player Names" title="Help: Player Names">?</a></label>
-                    <input type="text" id="player-0-name" value="Enter Player Name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="app.updatePlayerName(0, this.value)">
-                </div>
-                <div data-player-index="1">
-                    <label for="player-1-name" class="block text-sm font-medium text-gray-700">Player 2 Name</label>
-                    <input type="text" id="player-1-name" value="Enter Player Name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="app.updatePlayerName(1, this.value)">
-                </div>
-                <div data-player-index="2">
-                    <label for="player-2-name" class="block text-sm font-medium text-gray-700">Player 3 Name</label>
-                    <input type="text" id="player-2-name" value="Enter Player Name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="app.updatePlayerName(2, this.value)">
-                </div>
-                <div data-player-index="3">
-                    <label for="player-3-name" class="block text-sm font-medium text-gray-700">Player 4 Name</label>
-                    <input type="text" id="player-3-name" value="Enter Player Name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="app.updatePlayerName(3, this.value)">
+                <div class="flex flex-col gap-3">
+                    <div data-player-index="0">
+                        <label for="player-0-name" class="block text-sm font-medium text-gray-700">Player 1 Name</label>
+                        <input type="text" id="player-0-name" value="Enter Player Name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="app.updatePlayerName(0, this.value)">
+                    </div>
+                    <div data-player-index="1">
+                        <label for="player-1-name" class="block text-sm font-medium text-gray-700">Player 2 Name</label>
+                        <input type="text" id="player-1-name" value="Enter Player Name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="app.updatePlayerName(1, this.value)">
+                    </div>
+                    <div data-player-index="2">
+                        <label for="player-2-name" class="block text-sm font-medium text-gray-700">Player 3 Name</label>
+                        <input type="text" id="player-2-name" value="Enter Player Name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="app.updatePlayerName(2, this.value)">
+                    </div>
+                    <div data-player-index="3">
+                        <label for="player-3-name" class="block text-sm font-medium text-gray-700">Player 4 Name</label>
+                        <input type="text" id="player-3-name" value="Enter Player Name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" oninput="app.updatePlayerName(3, this.value)">
+                    </div>
                 </div>
             </div>
-            
-            <!-- NEW: Lock Scoring Control Bar - Located just before the scorecard table -->
-            <div class="flex justify-between items-start mb-4 p-4 bg-gray-50 border border-gray-200 rounded-xl shadow-lg">
-                <div class="flex flex-col items-start space-y-2">
-                    <!-- Par button stacked above the status and slider -->
-                    <button id="par-toggle" class="bg-accent-gold text-white font-bold py-2 px-4 rounded-md shadow-md hover:bg-amber-600 transition">
-                        Edit Hole Pars
-                    </button>
-                    <a class="help-link" href="#help-lock-and-par" aria-label="Help: Lock and Par" title="Help: Lock and Par">?</a>
 
-                    <div class="flex items-center space-x-3">
-                        <label class="text-base font-bold text-golf-dark flex items-center">
-                            <span class="mr-3">🔒 Scoring Status:</span>
-                            <span id="lock-status" class="text-red-600 transition-colors duration-200">UNLOCKED</span>
-                        </label>
+            <!-- Step 3: Start Scoring -->
+            <div class="setup-step-block">
+                <div class="setup-step-header">
+                    <span class="setup-step-badge">3</span>
+                    <span class="setup-step-title">Start Scoring</span>
+                </div>
+                <button id="start-round-btn" type="button" class="w-full py-4 text-xl font-extrabold rounded-xl shadow-lg border-2 transition transform hover:scale-105 active:scale-95" style="background:#1f7a3a;color:#fff;border-color:#0b3f23;letter-spacing:0.02em;">
+                    ▶ Start Round
+                </button>
+            </div>
 
-                        <!-- Lock toggle immediately after the label (left side) -->
+            <!-- Scorecard controls: Lock toggle + Collapsible Pars -->
+            <div class="flex flex-col gap-3 mb-4">
+
+                <!-- Prevent accidental edits toggle -->
+                <div class="lock-row">
+                    <div>
+                        <div class="lock-row-label">🔒 Prevent accidental edits</div>
+                        <div class="text-xs text-gray-500 mt-0.5">Turn on after entering scores to lock them</div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span id="lock-status" class="lock-row-state text-red-600">OFF</span>
                         <input type="checkbox" id="lock-toggle" class="hidden">
                         <label for="lock-toggle" id="lock-toggle-label" class="toggle-switch cursor-pointer relative inline-block rounded-full transition-colors duration-200 shadow-lg">
                             <span class="toggle-circle absolute bg-white rounded-full transition-transform duration-200 shadow-md"></span>
@@ -469,21 +562,23 @@
                     </div>
                 </div>
 
-                <!-- right side intentionally left empty for possible future controls -->
-                <div></div>
-            </div>
-
-            <!-- Par Editor Modal -->
-            <div id="par-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
-                <div class="p-6 rounded-xl shadow-2xl w-full max-w-lg" style="background-color:#b3e0b3">
-                    <h3 class="text-xl font-bold mb-4">Set Hole Pars (18 Holes)</h3>
-                    <div id="par-inputs" class="grid grid-cols-6 gap-2 max-h-80 overflow-y-auto pb-4">
-                        <!-- Pars will be generated here -->
+                <!-- Collapsible Customize Pars -->
+                <div>
+                    <div class="pars-collapsible-header" id="pars-collapsible-trigger" role="button" aria-expanded="false" aria-controls="pars-collapsible-body" tabindex="0">
+                        <span>⛳ Customize Pars <span style="font-weight:400;font-size:0.85em;">(Optional)</span></span>
+                        <span class="pars-chevron" id="pars-chevron">▼</span>
                     </div>
-                    <button id="save-par" class="w-full mt-4 bg-golf-green text-white font-bold py-2 rounded-md hover:bg-green-700 transition">
-                        Done
-                    </button>
+                    <div class="pars-collapsible-body" id="pars-collapsible-body">
+                        <p class="text-xs text-gray-500 mb-2">Most golfers can skip this — only change if your course has different par values.</p>
+                        <div id="par-inputs" class="grid grid-cols-6 gap-2 pb-2">
+                            <!-- Pars will be generated here -->
+                        </div>
+                        <button id="save-par" class="w-full mt-2 mb-1 bg-golf-green text-white font-bold py-2 rounded-md hover:bg-green-700 transition">
+                            Save Pars
+                        </button>
+                    </div>
                 </div>
+                <a class="help-link self-end" href="#help-lock-and-par" aria-label="Help: Lock and Par" title="Help: Lock and Par">?</a>
             </div>
 
             <!-- Scorecard Table -->
@@ -501,7 +596,7 @@
             <!-- Control Buttons -->
             <div class="flex justify-center mt-6 space-x-4">
                 <button id="save-round" class="btn-primary bg-golf-green text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-green-700 transition transform hover:scale-105">
-                    💾 Save Round Offline
+                    💾 Save Round
                 </button>
                 <button id="reset-round" class="bg-red-600 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-red-700 transition transform hover:scale-105">
                     🔄 Reset Current Round
@@ -511,11 +606,10 @@
         </div>
 
         <!-- Saved Rounds View -->
-        <div id="saved-rounds-view" class="p-6 lg:p-8 rounded-xl shadow-2xl hidden" style="background-color:#b3e0b3">
+        <div id="saved-rounds-view" class="p-6 lg:p-8 rounded-xl shadow-2xl mt-6" style="background-color:#b3e0b3">
             <h2 class="text-2xl font-bold mb-4 text-golf-dark">Saved Rounds <a class="help-link" href="#help-saved-rounds" aria-label="Help: Saved Rounds" title="Help: Saved Rounds">?</a></h2>
             <div class="mb-4 p-3 rounded-lg border-2 border-black" style="background-color:#fff4d6;">
-                <p class="text-sm font-semibold text-golf-dark">Important: Saved rounds are stored locally in this browser.</p>
-                <p class="text-sm text-golf-dark">If you do not export a backup, rounds can be lost after browser updates, browser data clearing, reinstall, device changes, or other storage deletion events.</p>
+                <p class="text-sm font-semibold text-golf-dark">💡 Tip: Each time you tap "Save Round", the app stores the round and downloads an updated spreadsheet copy.</p>
             </div>
             <div id="saved-rounds-list" class="space-y-4">
                 <p class="text-gray-500">Loading saved rounds...</p>
@@ -531,17 +625,17 @@
 
             <div id="help-round-setup" class="help-card">
                 <h3>Round Setup</h3>
-                <p>Use this area to define your round before scoring. Set course details, round options, and player names. The scorecard updates instantly based on these settings.</p>
+                <p>Set up your round here before entering scores. Add course info, choose round options, and enter player names. The scorecard updates right away as you make changes.</p>
             </div>
 
             <div id="help-course-name" class="help-card">
                 <h3>Course Name</h3>
-                <p>Enter the course name. It is used when saving rounds so they are easy to find later in Saved Rounds.</p>
+                <p>Enter your course name. It is saved with the round so you can find it quickly in Saved Rounds.</p>
             </div>
 
             <div id="help-date" class="help-card">
                 <h3>Date</h3>
-                <p>Choose the round date. This date is stored with each saved round and shown in the Saved Rounds list.</p>
+                <p>Choose the round date. The date is saved and shown with the round in Saved Rounds.</p>
             </div>
 
             <div class="help-return-wrap">
@@ -550,17 +644,17 @@
 
             <div id="help-holes" class="help-card">
                 <h3>Holes to Play</h3>
-                <p>Select 9 or 18 holes. For 9-hole rounds, only the selected nine is active for scoring and totals.</p>
+                <p>Choose 9 or 18 holes. If you choose 9 holes, only that side is used for scoring and totals.</p>
             </div>
 
             <div id="help-starting-hole" class="help-card">
                 <h3>Starting Hole</h3>
-                <p>Pick Front 9 (Hole 1) or Back 9 (Hole 10). The scorecard order and tab flow follow this selection.</p>
+                <p>Pick Front 9 (Hole 1) or Back 9 (Hole 10). The scorecard order and totals follow the side you start on.</p>
             </div>
 
             <div id="help-player-count" class="help-card">
                 <h3>Number of Players</h3>
-                <p>Choose how many players are in the round. Only that number of player name fields will be shown.</p>
+                <p>Choose how many players are in the round. Only that many player name fields are shown.</p>
             </div>
 
             <div class="help-return-wrap">
@@ -569,17 +663,17 @@
 
             <div id="help-player-names" class="help-card">
                 <h3>Player Names</h3>
-                <p>Type each player name. A player appears on the scorecard once a real name is entered.</p>
+                <p>Enter each player name. A player appears on the scorecard once a real name is entered.</p>
             </div>
 
             <div id="help-lock-and-par" class="help-card">
-                <h3>Edit Hole Pars and Lock Scoring</h3>
-                <p>Use Edit Hole Pars to customize par values. Use the lock toggle to prevent accidental score edits after entry.</p>
+                <h3>Customize Pars & Prevent Accidental Edits</h3>
+                <p>Use "Customize Pars (Optional)" only if your course has different pars. Turn on "Prevent accidental edits" after entering scores to lock inputs and avoid accidental changes.</p>
             </div>
 
             <div id="help-save-reset" class="help-card">
                 <h3>Save and Reset</h3>
-                <p>Save Round Offline stores the round in your browser storage (IndexedDB). Reset Current Round clears setup and scores to start a fresh round.</p>
+                <p>Tap "Save Round" to store the round on your phone and download an updated spreadsheet (.csv). The file includes hole-by-hole values plus Front 9, Back 9, and Total for both Strokes and Putts. Tap "Reset Current Round" to clear setup and scores and start over.</p>
             </div>
 
             <div class="help-return-wrap">
@@ -587,8 +681,8 @@
             </div>
 
             <div id="help-saved-rounds" class="help-card">
-                <h3>Saved Rounds, Export, and Import</h3>
-                <p>Saved Rounds lets you review previously saved rounds. Export downloads a JSON backup file. Import restores rounds from a previously exported JSON file. If rounds are not exported, they may be lost if browser storage is cleared, browser/app data is reset, or local data is removed during updates or device changes.</p>
+                <h3>Saved Rounds and Spreadsheet Files</h3>
+                <p>Saved Rounds shows your previously saved rounds. Every time you tap "Save Round", an updated spreadsheet file is downloaded to your device. Keep those files if you want an extra backup, because browser storage can be lost during cleanup, app reinstalls, or device changes.</p>
             </div>
         </div>
     </div>
@@ -657,35 +751,6 @@
                 request.onerror = (event) => reject(event.target.error);
             });
         };
-
-        /**
-         * Saves multiple rounds into IndexedDB.
-         * Any existing id field is removed so IndexedDB can assign a new key.
-         * @param {Array<object>} rounds
-         * @returns {Promise<number>} Number of rounds imported
-         */
-        const importRoundsToDB = async (rounds) => {
-            if (!Array.isArray(rounds) || rounds.length === 0) return 0;
-
-            const db = await openDB();
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction(STORE_NAME, 'readwrite');
-                const store = transaction.objectStore(STORE_NAME);
-                let importedCount = 0;
-
-                rounds.forEach((round) => {
-                    const { id, ...safeRound } = round || {};
-                    void id;
-                    store.add(safeRound);
-                    importedCount += 1;
-                });
-
-                transaction.oncomplete = () => resolve(importedCount);
-                transaction.onerror = () => reject(transaction.error || new Error('Import transaction failed.'));
-                transaction.onabort = () => reject(transaction.error || new Error('Import transaction aborted.'));
-            });
-        };
-
 
         // --- Application State and Logic ---
         const NUM_HOLES = 18;
@@ -771,24 +836,20 @@
             initDOM() {
                 this.courseNameInput = document.getElementById('course-name');
                 this.roundDateInput = document.getElementById('round-date');
-                this.parToggleBtn = document.getElementById('par-toggle');
-                this.parModal = document.getElementById('par-modal');
+                this.parsCollapsibleTrigger = document.getElementById('pars-collapsible-trigger');
+                this.parsCollapsibleBody = document.getElementById('pars-collapsible-body');
+                this.parsChevron = document.getElementById('pars-chevron');
                 this.parInputsContainer = document.getElementById('par-inputs');
                 this.saveParBtn = document.getElementById('save-par');
                 this.scorecardTable = document.getElementById('scorecard-table');
                 this.saveRoundBtn = document.getElementById('save-round');
                 this.resetRoundBtn = document.getElementById('reset-round');
-                this.exportRoundsBtn = document.getElementById('export-rounds');
-                this.exportRoundsCsvBtn = document.getElementById('export-rounds-csv');
-                this.importRoundsBtn = document.getElementById('import-rounds');
-                this.importRoundsInput = document.getElementById('import-rounds-input');
                 this.helpReturnBtns = Array.from(document.querySelectorAll('.help-return-btn'));
                 this.messageBox = document.getElementById('message-box');
+                this.startRoundBtn = document.getElementById('start-round-btn');
 
                 this.currentRoundView = document.getElementById('current-round-view');
                 this.savedRoundsView = document.getElementById('saved-rounds-view');
-                this.tabCurrentRound = document.getElementById('tab-current-round');
-                this.tabSavedRounds = document.getElementById('tab-saved-rounds');
                 
                 // Lock UI elements
                 this.lockToggle = document.getElementById('lock-toggle');
@@ -874,12 +935,16 @@
             }
 
             initEventHandlers() {
-                // Ensure course name is always stored/displayed in uppercase as user types
+                // Ensure each course-name word starts with a capital letter as user types.
                 this.courseNameInput.addEventListener('input', (e) => {
-                    const upper = (e.target.value || '').toUpperCase();
-                    // update the visible value (keeps caret position reasonably)
-                    e.target.value = upper;
-                    this.state.courseName = upper;
+                    const normalized = this.toTitleCase(e.target.value || '');
+                    // update the visible value and preserve cursor position where possible
+                    const cursorPos = e.target.selectionStart;
+                    e.target.value = normalized;
+                    if (cursorPos !== null) {
+                        e.target.setSelectionRange(cursorPos, cursorPos);
+                    }
+                    this.state.courseName = normalized;
                     this.scheduleDraftSave();
                 });
                 this.roundDateInput.addEventListener('input', (e) => {
@@ -887,23 +952,21 @@
                     this.scheduleDraftSave();
                 });
 
-                this.parToggleBtn.addEventListener('click', () => this.showParModal());
-                this.saveParBtn.addEventListener('click', () => this.saveParModal());
-
-                this.parModal.addEventListener('click', (e) => {
-                    if (e.target === this.parModal) {
-                        this.hideParModal();
-                    }
+                // Collapsible pars section
+                const togglePars = () => {
+                    const isOpen = this.parsCollapsibleBody.classList.toggle('open');
+                    this.parsChevron.classList.toggle('open', isOpen);
+                    this.parsCollapsibleTrigger.setAttribute('aria-expanded', String(isOpen));
+                    if (isOpen) this.renderParInputs();
+                };
+                this.parsCollapsibleTrigger.addEventListener('click', togglePars);
+                this.parsCollapsibleTrigger.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); togglePars(); }
                 });
+                this.saveParBtn.addEventListener('click', () => this.saveParModal());
 
                 this.saveRoundBtn.addEventListener('click', () => this.handleSaveRound());
                 this.resetRoundBtn.addEventListener('click', () => this.handleResetRound());
-
-                // Export rounds button
-                if (this.exportRoundsBtn) this.exportRoundsBtn.addEventListener('click', () => this.exportRounds());
-                if (this.exportRoundsCsvBtn) this.exportRoundsCsvBtn.addEventListener('click', () => this.exportRoundsCsv());
-                if (this.importRoundsBtn) this.importRoundsBtn.addEventListener('click', () => this.importRounds());
-                if (this.importRoundsInput) this.importRoundsInput.addEventListener('change', (e) => this.handleImportRoundsSelection(e));
 
                 this.helpLinkContext = null;
                 this.tempReturnFocusId = null;
@@ -936,9 +999,6 @@
                     btn.addEventListener('click', () => this.returnFromHelp());
                 });
 
-                this.tabCurrentRound.addEventListener('click', () => this.switchView('current'));
-                this.tabSavedRounds.addEventListener('click', () => this.switchView('saved'));
-                
                 // Holes to play and starting hole radio buttons
                 this.holes9Radio.addEventListener('change', () => {
                     this.state.holesPlaying = 9;
@@ -978,6 +1038,17 @@
                 
                 // Lock toggle listener
                 this.lockToggle.addEventListener('change', (e) => this.handleLockToggle(e.target.checked));
+
+                // Start Round button
+                if (this.startRoundBtn) {
+                    this.startRoundBtn.addEventListener('click', () => {
+                        const table = document.getElementById('scorecard-table');
+                        if (table) {
+                            table.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                        setTimeout(() => this.focusFirstPlayableHoleInput(), 400);
+                    });
+                }
             }
             
             // Handle Lock Toggle
@@ -986,42 +1057,21 @@
                 this.updateLockStatusUI(isLocked);
                 this.scheduleDraftSave();
                 this.renderScorecard(); // Re-render to apply 'disabled' to inputs
-                this.showMessage(`Scorecard inputs are now ${isLocked ? 'LOCKED' : 'UNLOCKED'}.`, isLocked ? 'success' : 'info');
+                this.showMessage(`Accidental edit prevention is now ${isLocked ? 'ON — scores are locked.' : 'OFF — scores can be edited.'}`, isLocked ? 'success' : 'info');
             }
             
             // Update Lock Status UI
             updateLockStatusUI(isLocked) {
-                this.lockStatusSpan.textContent = isLocked ? 'LOCKED' : 'UNLOCKED';
+                this.lockStatusSpan.textContent = isLocked ? 'ON' : 'OFF';
                 this.lockStatusSpan.classList.toggle('text-red-600', !isLocked);
                 this.lockStatusSpan.classList.toggle('text-golf-green', isLocked);
             }
 
-            switchView(view) {
-                if (view === 'current') {
-                    this.currentRoundView.classList.remove('hidden');
-                    this.savedRoundsView.classList.add('hidden');
-                    this.tabCurrentRound.classList.replace('bg-gray-200', 'bg-golf-green');
-                    this.tabCurrentRound.classList.replace('text-gray-700', 'text-white');
-                    this.tabSavedRounds.classList.replace('bg-golf-green', 'bg-gray-200');
-                    this.tabSavedRounds.classList.replace('text-white', 'text-gray-700');
-                    this.renderScorecard(); // Re-render in case par was changed
-                    this.focusFirstPlayableHoleInput();
-                } else if (view === 'saved') {
-                    this.currentRoundView.classList.add('hidden');
-                    this.savedRoundsView.classList.remove('hidden');
-                    this.tabCurrentRound.classList.replace('bg-golf-green', 'bg-gray-200');
-                    this.tabCurrentRound.classList.replace('text-white', 'text-gray-700');
-                    this.tabSavedRounds.classList.replace('bg-gray-200', 'bg-golf-green');
-                    this.tabSavedRounds.classList.replace('text-gray-700', 'text-white');
-                    this.loadSavedRoundsView();
-                }
-            }
-
             // --- Player Name Update ---
             updatePlayerName(playerIndex, name) {
-                // If the name is empty, keep the prompt as the stored value
-                const trimmed = (name || '').trim();
-                const normalized = trimmed.length > 0 ? this.toTitleCase(trimmed) : this.playerNamePrompt;
+                // Keep spaces while typing so first and last names can be entered naturally.
+                const raw = name || '';
+                const normalized = raw.trim().length > 0 ? this.toTitleCase(raw) : this.playerNamePrompt;
                 this.state.players[playerIndex].name = normalized;
                 // Update the input value (keeps prompt behavior consistent)
                 const input = document.getElementById(`player-${playerIndex}-name`);
@@ -1183,24 +1233,17 @@
             }
 
             // --- Par Modal Logic ---
-            showParModal() {
+            renderParInputs() {
                 this.parInputsContainer.innerHTML = '';
                 this.state.holePars.forEach((par, i) => {
                     const label = document.createElement('label');
                     label.className = 'flex flex-col items-center';
                     label.innerHTML = `
-                        <span class="text-xs font-semibold mb-1">Hole ${i + 1}</span>
+                        <span class="text-xs font-semibold mb-1">H${i + 1}</span>
                         <input type="number" value="${par}" min="1" max="7" data-hole-index="${i}" class="score-card-input !w-12">
                     `;
                     this.parInputsContainer.appendChild(label);
                 });
-                this.parModal.classList.remove('hidden');
-                this.parModal.classList.add('flex');
-            }
-
-            hideParModal() {
-                this.parModal.classList.add('hidden');
-                this.parModal.classList.remove('flex');
             }
 
             saveParModal() {
@@ -1214,106 +1257,27 @@
                 }
 
                 this.state.holePars = newPars;
-                this.hideParModal();
+                // Close the collapsible
+                this.parsCollapsibleBody.classList.remove('open');
+                this.parsChevron.classList.remove('open');
+                this.parsCollapsibleTrigger.setAttribute('aria-expanded', 'false');
                 this.scheduleDraftSave();
                 this.renderScorecard();
                 this.showMessage("Course par successfully updated!", 'success');
             }
 
-            // --- Current Round Draft Persistence ---
+            // --- Draft Persistence DISABLED ---
+            // Scores are intentionally not auto-saved. The golfer must explicitly
+            // press "Save Round" — otherwise scores are cleared on page close.
 
-            scheduleDraftSave() {
-                clearTimeout(this.draftSaveTimer);
-                this.draftSaveTimer = setTimeout(() => this.saveDraftToStorage(), 150);
-            }
-
-            saveDraftToStorage() {
-                try {
-                    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(this.state));
-                } catch (error) {
-                    console.warn('Failed to save current round draft:', error);
-                }
-            }
-
+            scheduleDraftSave() { /* no-op: auto-save removed */ }
+            saveDraftToStorage() { /* no-op: auto-save removed */ }
             loadDraftFromStorage() {
-                try {
-                    const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
-                    if (!raw) return;
-
-                    const draft = JSON.parse(raw);
-                    if (!draft || typeof draft !== 'object') return;
-                    if (!Array.isArray(draft.holePars) || draft.holePars.length !== NUM_HOLES) return;
-                    if (!Array.isArray(draft.players)) return;
-
-                    const normalizedPlayers = Array.from({ length: NUM_PLAYERS }, (_, i) => {
-                        const player = draft.players[i] || {};
-                        const strokes = Array.isArray(player.strokes) && player.strokes.length === NUM_HOLES
-                            ? player.strokes.map((v) => parseInt(v) || 0)
-                            : Array(NUM_HOLES).fill(0);
-                        const putts = Array.isArray(player.putts) && player.putts.length === NUM_HOLES
-                            ? player.putts.map((v) => parseInt(v) || 0)
-                            : Array(NUM_HOLES).fill(0);
-                        const name = (player.name || '').trim();
-
-                        return {
-                            name: name.length > 0 ? this.toTitleCase(name) : this.playerNamePrompt,
-                            strokes,
-                            putts,
-                        };
-                    });
-
-                    const draftCourseName = (draft.courseName || this.state.courseName || '').toString().trim();
-                    const normalizedCourseName = /^course\s*name$/i.test(draftCourseName)
-                        ? ''
-                        : draftCourseName.toUpperCase();
-
-                    this.state = {
-                        courseName: normalizedCourseName,
-                        roundDate: draft.roundDate || this.state.roundDate,
-                        holePars: draft.holePars.map((v) => {
-                            const par = parseInt(v) || 0;
-                            return Math.min(7, Math.max(1, par));
-                        }),
-                        holesPlaying: draft.holesPlaying || 18,
-                        startingHole: draft.startingHole || 1,
-                        playerCount: Math.min(NUM_PLAYERS, Math.max(1, parseInt(draft.playerCount, 10) || 1)),
-                        players: normalizedPlayers,
-                        isLocked: Boolean(draft.isLocked),
-                    };
-
-                    this.courseNameInput.value = this.state.courseName;
-                    this.roundDateInput.value = this.state.roundDate;
-                    if (this.state.holesPlaying === 9) {
-                        this.holes9Radio.checked = true;
-                    } else {
-                        this.holes18Radio.checked = true;
-                    }
-                    if (this.state.startingHole === 10) {
-                        this.startBackRadio.checked = true;
-                    } else {
-                        this.startFrontRadio.checked = true;
-                    }
-                    this.playerCountRadios.forEach((radio) => {
-                        radio.checked = parseInt(radio.value, 10) === this.state.playerCount;
-                    });
-                    this.state.players.forEach((player, i) => {
-                        const input = document.getElementById(`player-${i}-name`);
-                        if (input) input.value = player.name;
-                    });
-                    this.updatePlayerInputVisibility();
-                    this.lockToggle.checked = this.state.isLocked;
-                    this.updateLockStatusUI(this.state.isLocked);
-                } catch (error) {
-                    console.warn('Failed to load current round draft:', error);
-                }
+                // Clear any old draft that may still be sitting in localStorage
+                try { localStorage.removeItem(DRAFT_STORAGE_KEY); } catch (_) {}
             }
-
             clearDraftFromStorage() {
-                try {
-                    localStorage.removeItem(DRAFT_STORAGE_KEY);
-                } catch (error) {
-                    console.warn('Failed to clear current round draft:', error);
-                }
+                try { localStorage.removeItem(DRAFT_STORAGE_KEY); } catch (_) {}
             }
 
             // --- Rendering Logic ---
@@ -1681,35 +1645,15 @@
                 try {
                     await saveRound(roundData);
                     this.saveDraftToStorage();
-                    this.showMessage("Round saved locally in this browser (IndexedDB). Open Saved Rounds to view it.", 'success');
+                    await this.exportRoundsCsv({ showSuccessMessage: false });
+                    this.showMessage("Round saved and spreadsheet exported. Check your downloads folder.", 'success');
                 } catch (error) {
                     console.error("Error saving round:", error);
                     this.showMessage(`Error saving round: ${error.message}. Check console for details.`, 'error');
                 } finally {
                     this.saveRoundBtn.disabled = false;
-                    this.saveRoundBtn.textContent = '💾 Save Round Offline';
+                    this.saveRoundBtn.textContent = '💾 Save Round';
                     this.loadSavedRoundsView(); // Refresh the saved view
-                }
-            }
-
-            async exportRounds() {
-                try {
-                    const rounds = await loadAllRounds();
-                    const dataStr = JSON.stringify(rounds, null, 2);
-                    const blob = new Blob([dataStr], { type: 'application/json' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-                    a.href = url;
-                    a.download = `golf_rounds_${stamp}.json`;
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                    URL.revokeObjectURL(url);
-                    this.showMessage('Export started. Check your downloads folder.', 'success');
-                } catch (err) {
-                    console.error('Export failed:', err);
-                    this.showMessage('Export failed. See console for details.', 'error');
                 }
             }
 
@@ -1721,7 +1665,8 @@
                 return str;
             }
 
-            async exportRoundsCsv() {
+            async exportRoundsCsv(options = {}) {
+                const { showSuccessMessage = true } = options;
                 try {
                     const rounds = await loadAllRounds();
                     if (!Array.isArray(rounds) || rounds.length === 0) {
@@ -1729,51 +1674,78 @@
                         return;
                     }
 
-                    const headers = [
-                        'round_id',
-                        'course_name',
-                        'round_date',
-                        'timestamp',
-                        'player_name',
-                        'total_score',
-                        'score_to_par',
-                    ];
-
-                    for (let i = 1; i <= NUM_HOLES; i++) {
-                        headers.push(`par_h${i}`);
-                    }
-                    for (let i = 1; i <= NUM_HOLES; i++) {
-                        headers.push(`strokes_h${i}`);
-                    }
-                    for (let i = 1; i <= NUM_HOLES; i++) {
-                        headers.push(`putts_h${i}`);
-                    }
-
-                    const lines = [headers.join(',')];
+                    // Header row: Date, Player Name, Course Name, Row, H1..H18, Front 9, Back 9, Total
+                    const holeHeaders = Array.from({ length: NUM_HOLES }, (_, i) => `H${i + 1}`);
+                    const headerRow = ['Date', 'Player Name', 'Course Name', 'Row', ...holeHeaders, 'Front 9', 'Back 9', 'Total']
+                        .map(v => this.csvEscape(v))
+                        .join(',');
+                    const lines = [headerRow];
 
                     rounds.forEach((round) => {
-                        const par = Array.isArray(round.par) ? round.par : Array(NUM_HOLES).fill('');
+                        const courseName = round.courseName ?? round.course_name ?? '';
+                        const date = round.date ?? round.roundDate ?? round.round_date ?? '';
                         const players = Array.isArray(round.players) ? round.players : [];
 
+                        // Determine which holes were actually played (at least one player has a stroke > 0)
+                        const playedHoles = new Set();
+                        players.forEach(p => {
+                            if (Array.isArray(p.strokes)) {
+                                p.strokes.forEach((s, i) => { if (s > 0) playedHoles.add(i); });
+                            }
+                        });
+
                         players.forEach((player) => {
-                            const strokes = Array.isArray(player.strokes) ? player.strokes : Array(NUM_HOLES).fill('');
-                            const putts = Array.isArray(player.putts) ? player.putts : Array(NUM_HOLES).fill('');
+                            const strokes = Array.isArray(player.strokes) ? player.strokes : Array(NUM_HOLES).fill(0);
+                            const putts   = Array.isArray(player.putts)   ? player.putts   : Array(NUM_HOLES).fill(0);
+                            const name = player.name ?? '';
 
-                            const row = [
-                                round.id ?? '',
-                                round.courseName ?? round.course_name ?? '',
-                                round.date ?? round.roundDate ?? round.round_date ?? '',
-                                round.timestamp ?? '',
-                                player.name ?? '',
-                                player.totalScore ?? '',
-                                player.scoreToPar ?? '',
-                            ];
+                            const sumSegment = (values, start, end) => {
+                                let sum = 0;
+                                for (let i = start; i <= end; i++) {
+                                    if (playedHoles.has(i) && values[i] > 0) sum += values[i];
+                                }
+                                return sum;
+                            };
 
-                            for (let i = 0; i < NUM_HOLES; i++) row.push(par[i] ?? '');
-                            for (let i = 0; i < NUM_HOLES; i++) row.push(strokes[i] ?? '');
-                            for (let i = 0; i < NUM_HOLES; i++) row.push(putts[i] ?? '');
+                            const strokeFront9 = sumSegment(strokes, 0, 8);
+                            const strokeBack9 = sumSegment(strokes, 9, 17);
+                            const strokeTotal = strokeFront9 + strokeBack9;
 
-                            lines.push(row.map((v) => this.csvEscape(v)).join(','));
+                            const puttFront9 = sumSegment(putts, 0, 8);
+                            const puttBack9 = sumSegment(putts, 9, 17);
+                            const puttTotal = puttFront9 + puttBack9;
+
+                            // Line 1: Strokes — Date, Player Name, Course Name, "Strokes", H1..H18
+                            const strokeCells = Array.from({ length: NUM_HOLES }, (_, i) =>
+                                playedHoles.has(i) ? (strokes[i] > 0 ? String(strokes[i]) : '') : ''
+                            );
+                            const strokeRow = [
+                                this.csvEscape(date),
+                                this.csvEscape(name),
+                                this.csvEscape(courseName),
+                                this.csvEscape('Strokes'),
+                                ...strokeCells.map(v => this.csvEscape(v)),
+                                this.csvEscape(strokeFront9),
+                                this.csvEscape(strokeBack9),
+                                this.csvEscape(strokeTotal)
+                            ].join(',');
+
+                            // Line 2: Putts — Date, Player Name, Course Name, "Putts", H1..H18
+                            const puttCells = Array.from({ length: NUM_HOLES }, (_, i) =>
+                                playedHoles.has(i) ? (putts[i] > 0 ? String(putts[i]) : '') : ''
+                            );
+                            const puttRow = [
+                                this.csvEscape(date),
+                                this.csvEscape(name),
+                                this.csvEscape(courseName),
+                                this.csvEscape('Putts'),
+                                ...puttCells.map(v => this.csvEscape(v)),
+                                this.csvEscape(puttFront9),
+                                this.csvEscape(puttBack9),
+                                this.csvEscape(puttTotal)
+                            ].join(',');
+
+                            lines.push(strokeRow, puttRow);
                         });
                     });
 
@@ -1788,10 +1760,12 @@
                     a.click();
                     a.remove();
                     URL.revokeObjectURL(url);
-                    this.showMessage('CSV export started. Open it in Excel or Google Sheets.', 'success');
+                    if (showSuccessMessage) {
+                        this.showMessage('Spreadsheet export started. Open it in Excel or Google Sheets.', 'success');
+                    }
                 } catch (err) {
                     console.error('CSV export failed:', err);
-                    this.showMessage('CSV export failed. See console for details.', 'error');
+                    this.showMessage('Spreadsheet export failed. See console for details.', 'error');
                 }
             }
 
@@ -1821,77 +1795,6 @@
                     const tempTarget = document.getElementById(this.tempReturnFocusId);
                     if (tempTarget) tempTarget.removeAttribute('id');
                     this.tempReturnFocusId = null;
-                }
-            }
-
-            importRounds() {
-                if (!this.importRoundsInput) return;
-                this.importRoundsInput.value = '';
-                this.importRoundsInput.click();
-            }
-
-            normalizeImportedRound(rawRound, index) {
-                if (!rawRound || typeof rawRound !== 'object') return null;
-
-                const safePar = Array.isArray(rawRound.par) && rawRound.par.length === NUM_HOLES
-                    ? rawRound.par.map((v) => Math.min(7, Math.max(1, parseInt(v, 10) || 0)))
-                    : [...this.defaultPar];
-
-                const totalPar = this.calculateTotal(safePar);
-                const safePlayers = (Array.isArray(rawRound.players) ? rawRound.players : []).map((player) => {
-                    const strokes = Array.isArray(player?.strokes) && player.strokes.length === NUM_HOLES
-                        ? player.strokes.map((v) => parseInt(v, 10) || 0)
-                        : Array(NUM_HOLES).fill(0);
-                    const putts = Array.isArray(player?.putts) && player.putts.length === NUM_HOLES
-                        ? player.putts.map((v) => parseInt(v, 10) || 0)
-                        : Array(NUM_HOLES).fill(0);
-                    const totalScore = this.calculateTotal(strokes);
-
-                    return {
-                        name: this.toTitleCase((player?.name || '').toString().trim()),
-                        strokes,
-                        putts,
-                        totalScore,
-                        scoreToPar: totalScore - totalPar,
-                    };
-                }).filter((p) => p.name.length > 0);
-
-                return {
-                    courseName: (rawRound.courseName || 'Imported Round').toString().trim(),
-                    date: (rawRound.date || this.getCurrentDateString()).toString(),
-                    par: safePar,
-                    players: safePlayers,
-                    timestamp: parseInt(rawRound.timestamp, 10) || (Date.now() + index),
-                };
-            }
-
-            async handleImportRoundsSelection(event) {
-                const file = event?.target?.files?.[0];
-                if (!file) return;
-
-                try {
-                    const fileText = await file.text();
-                    const parsed = JSON.parse(fileText);
-                    if (!Array.isArray(parsed)) {
-                        this.showMessage('Import failed: JSON must be an array of saved rounds.', 'error');
-                        return;
-                    }
-
-                    const normalized = parsed
-                        .map((round, i) => this.normalizeImportedRound(round, i))
-                        .filter((round) => round && round.courseName);
-
-                    if (normalized.length === 0) {
-                        this.showMessage('No valid rounds found in file.', 'error');
-                        return;
-                    }
-
-                    const importedCount = await importRoundsToDB(normalized);
-                    this.loadSavedRoundsView();
-                    this.showMessage(`Imported ${importedCount} round(s). They are now available under Saved Rounds.`, 'success');
-                } catch (error) {
-                    console.error('Import failed:', error);
-                    this.showMessage('Import failed. Use a JSON file exported from this app.', 'error');
                 }
             }
 
@@ -2013,10 +1916,10 @@
                     this.updateLockStatusUI(this.state.isLocked);
                     this.saveDraftToStorage();
                     
-                    // Switch view and render
-                    this.switchView('current');
+                    // Render and move focus back to scoring area.
+                    this.currentRoundView.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     this.renderScorecard();
-                    this.showMessage(`Round from ${round.courseName} (${round.date}) loaded successfully! The scorecard is currently LOCKED.`, 'info');
+                    this.showMessage(`Round from ${round.courseName} (${round.date}) loaded successfully! Edit prevention is ON.`, 'info');
                 };
 
                 request.onerror = (event) => {
@@ -2122,7 +2025,7 @@
             registerServiceWorker();
 
             if (!('indexedDB' in window)) {
-                document.getElementById('current-round-view').innerHTML = '<p class="text-red-600 p-8 text-center">Your browser does not support IndexedDB for offline storage. Please use a modern browser.</p>';
+                document.getElementById('current-round-view').innerHTML = '<p class="text-red-600 p-8 text-center">Your browser does not support offline storage. Please use a modern browser like Chrome or Safari.</p>';
                 return;
             }
             window.app = new GolfScorerApp();
