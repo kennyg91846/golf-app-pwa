@@ -1169,6 +1169,24 @@
                 } else if (inputRect.right > rightEdge) {
                     scroller.scrollLeft += (inputRect.right - rightEdge);
                 }
+
+                const row = input.closest('tr');
+                if (!row) return;
+
+                const alignRowToTop = () => {
+                    const rowRect = row.getBoundingClientRect();
+                    const viewportTop = window.visualViewport ? window.visualViewport.offsetTop : 0;
+                    const targetTop = viewportTop + 8;
+                    const delta = rowRect.top - targetTop;
+
+                    if (Math.abs(delta) > 8) {
+                        window.scrollTo({ top: Math.max(0, window.scrollY + delta), behavior: 'auto' });
+                    }
+                };
+
+                alignRowToTop();
+                requestAnimationFrame(alignRowToTop);
+                setTimeout(alignRowToTop, 250);
             }
 
             focusScoreInput(input) {
@@ -1227,21 +1245,64 @@
                 this.scheduleDraftSave();
                 this.renderScorecard();
 
-                if (nextFocusTarget) {
+                // --- End-of-nine / end-of-round notifications ---
+                let _suppressImmediateFocus = false;
+                if (type === 'putts' && val > 0) {
+                    const _holeSeq = this.getHoleSequence();
+                    const _hPos = _holeSeq.indexOf(holeIndex);
+                    const _active = this.getActivePlayerIndices();
+                    const _isLastPlayer = playerIndex === _active[_active.length - 1];
+                    if (_isLastPlayer) {
+                        const _firstRow = this.scorecardTable.querySelector('tbody tr:first-child');
+                        const _totalCells = _firstRow ? Array.from(_firstRow.querySelectorAll('.total-cell')) : [];
+                        if (_holeSeq.length === 18 && _hPos === 8) {
+                            // Front 9 complete — scroll to front 9 total, then advance to hole 10
+                            this.showMessage('Front 9 complete! Moving to the Back 9 →', 'info');
+                            _suppressImmediateFocus = true;
+                            const _f9Cell = _totalCells[0];
+                            setTimeout(() => { if (_f9Cell) _f9Cell.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); }, 150);
+                            if (nextFocusTarget) {
+                                const _nft = nextFocusTarget;
+                                setTimeout(() => {
+                                    const _sel = `input[data-player="${_nft.playerIndex}"][data-hole="${_nft.holeIndex}"][data-type="${_nft.type}"]`;
+                                    const _inp = this.scorecardTable.querySelector(_sel);
+                                    if (_inp && !_inp.disabled) this.focusScoreInput(_inp);
+                                }, 1800);
+                            }
+                        } else if (!nextFocusTarget) {
+                            // End of round — scroll to grand total then save button
+                            this.showMessage('🏌️ Round complete! Check your totals and save when ready.', 'success');
+                            const _grandCell = _totalCells[_totalCells.length - 2];
+                            setTimeout(() => { if (_grandCell) _grandCell.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); }, 150);
+                            const saveBtn = document.getElementById('save-round');
+                            if (saveBtn) setTimeout(() => saveBtn.scrollIntoView({ behavior: 'smooth', block: 'center' }), 700);
+                        }
+                    }
+                }
+
+                if (!_suppressImmediateFocus && nextFocusTarget) {
                     const isSameCell = nextFocusTarget.playerIndex === playerIndex
                         && nextFocusTarget.holeIndex === holeIndex
                         && nextFocusTarget.type === type;
-                    const selector = `input[data-player="${nextFocusTarget.playerIndex}"][data-hole="${nextFocusTarget.holeIndex}"][data-type="${nextFocusTarget.type}"]`;
-                    const input = this.scorecardTable.querySelector(selector);
-                    if (!input || input.disabled) return;
 
                     if (isSameCell) {
-                        input.focus({ preventScroll: true });
-                        this.ensureScoreInputVisible(input);
-                        const caret = input.value.length;
-                        try { input.setSelectionRange(caret, caret); } catch (e) { }
+                        // Re-focus same cell (still typing two-digit value)
+                        const _sel = `input[data-player="${nextFocusTarget.playerIndex}"][data-hole="${nextFocusTarget.holeIndex}"][data-type="${nextFocusTarget.type}"]`;
+                        const _inp = this.scorecardTable.querySelector(_sel);
+                        if (_inp && !_inp.disabled) {
+                            _inp.focus({ preventScroll: true });
+                            this.ensureScoreInputVisible(_inp);
+                            const caret = _inp.value.length;
+                            try { _inp.setSelectionRange(caret, caret); } catch (e) { }
+                        }
                     } else {
-                        this.focusScoreInput(input);
+                        // Advance to next cell — defer so mobile browser finishes current input event
+                        const _nft = nextFocusTarget;
+                        setTimeout(() => {
+                            const _sel = `input[data-player="${_nft.playerIndex}"][data-hole="${_nft.holeIndex}"][data-type="${_nft.type}"]`;
+                            const _inp = this.scorecardTable.querySelector(_sel);
+                            if (_inp && !_inp.disabled) this.focusScoreInput(_inp);
+                        }, 50);
                     }
                 }
             }
