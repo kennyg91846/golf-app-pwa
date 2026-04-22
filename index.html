@@ -1170,23 +1170,19 @@
                     scroller.scrollLeft += (inputRect.right - rightEdge);
                 }
 
-                const row = input.closest('tr');
-                if (!row) return;
-
-                const alignRowToTop = () => {
-                    const rowRect = row.getBoundingClientRect();
-                    const viewportTop = window.visualViewport ? window.visualViewport.offsetTop : 0;
-                    const targetTop = viewportTop + 8;
-                    const delta = rowRect.top - targetTop;
+                const alignTableToTop = () => {
+                    const tableRect = this.scorecardTable.getBoundingClientRect();
+                    const targetTop = 0;
+                    const delta = tableRect.top - targetTop;
 
                     if (Math.abs(delta) > 8) {
                         window.scrollTo({ top: Math.max(0, window.scrollY + delta), behavior: 'auto' });
                     }
                 };
 
-                alignRowToTop();
-                requestAnimationFrame(alignRowToTop);
-                setTimeout(alignRowToTop, 250);
+                alignTableToTop();
+                requestAnimationFrame(alignTableToTop);
+                setTimeout(alignTableToTop, 250);
             }
 
             focusScoreInput(input) {
@@ -1253,14 +1249,19 @@
                     const _active = this.getActivePlayerIndices();
                     const _isLastPlayer = playerIndex === _active[_active.length - 1];
                     if (_isLastPlayer) {
-                        const _firstRow = this.scorecardTable.querySelector('tbody tr:first-child');
-                        const _totalCells = _firstRow ? Array.from(_firstRow.querySelectorAll('.total-cell')) : [];
+                        const _firstNineSelector = `td.total-cell[data-total-slot="first9"][data-player="${playerIndex}"][data-type="strokes"]`;
+                        const _firstNineCell = this.scorecardTable.querySelector(_firstNineSelector);
+                        const _grandSelector = `td.total-cell[data-total-kind="grand"][data-player="${playerIndex}"][data-type="strokes"]`;
+                        const _grandCell = this.scorecardTable.querySelector(_grandSelector);
+                        if (_hPos === 8) {
+                            // First nine complete — always show the first-nine total column.
+                            setTimeout(() => { if (_firstNineCell) _firstNineCell.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); }, 150);
+                        }
+
                         if (_holeSeq.length === 18 && _hPos === 8) {
-                            // Front 9 complete — scroll to front 9 total, then advance to hole 10
+                            // First 9 complete in an 18-hole round — then advance to hole 10.
                             this.showMessage('Front 9 complete! Moving to the Back 9 →', 'info');
                             _suppressImmediateFocus = true;
-                            const _f9Cell = _totalCells[0];
-                            setTimeout(() => { if (_f9Cell) _f9Cell.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); }, 150);
                             if (nextFocusTarget) {
                                 const _nft = nextFocusTarget;
                                 setTimeout(() => {
@@ -1269,10 +1270,14 @@
                                     if (_inp && !_inp.disabled) this.focusScoreInput(_inp);
                                 }, 1800);
                             }
+                        } else if (_holeSeq.length === 9 && _hPos === 8) {
+                            // End of a 9-hole round — keep view on first-nine total, then guide to save.
+                            this.showMessage('🏌️ Round complete! Check your totals and save when ready.', 'success');
+                            const saveBtn = document.getElementById('save-round');
+                            if (saveBtn) setTimeout(() => saveBtn.scrollIntoView({ behavior: 'smooth', block: 'center' }), 700);
                         } else if (!nextFocusTarget) {
                             // End of round — scroll to grand total then save button
                             this.showMessage('🏌️ Round complete! Check your totals and save when ready.', 'success');
-                            const _grandCell = _totalCells[_totalCells.length - 2];
                             setTimeout(() => { if (_grandCell) _grandCell.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); }, 150);
                             const saveBtn = document.getElementById('save-round');
                             if (saveBtn) setTimeout(() => saveBtn.scrollIntoView({ behavior: 'smooth', block: 'center' }), 700);
@@ -1475,7 +1480,7 @@
                     }
                     
                     // Front 9 Total
-                        strokesRowHtml += `<td class="text-center font-bold text-base total-cell">${frontNineStrokes > 0 ? frontNineStrokes : '-'}</td>`;
+                        strokesRowHtml += `<td class="text-center font-bold text-base total-cell" data-total-kind="front9" data-total-slot="first9" data-player="${playerIndex}" data-type="strokes">${frontNineStrokes > 0 ? frontNineStrokes : '-'}</td>`;
 
                     // Second 9 display inputs
                     for (const h of secondNineDisplay) {
@@ -1496,10 +1501,10 @@
                     }
                     
                     // Back 9 Total
-                    strokesRowHtml += `<td class="text-center font-bold text-base total-cell">${backNineStrokes > 0 ? backNineStrokes : '-'}</td>`;
+                    strokesRowHtml += `<td class="text-center font-bold text-base total-cell" data-total-kind="back9" data-total-slot="second9" data-player="${playerIndex}" data-type="strokes">${backNineStrokes > 0 ? backNineStrokes : '-'}</td>`;
                     
                     // Grand Total
-                    strokesRowHtml += `<td class="text-center font-bold text-lg total-cell">${totalStrokes > 0 ? totalStrokes : '-'}</td>`;
+                    strokesRowHtml += `<td class="text-center font-bold text-lg total-cell" data-total-kind="grand" data-player="${playerIndex}" data-type="strokes">${totalStrokes > 0 ? totalStrokes : '-'}</td>`;
                     
                     // To Par
                     // use darker styling for negative (under par) values for better contrast
